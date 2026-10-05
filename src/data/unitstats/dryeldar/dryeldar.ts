@@ -6,70 +6,30 @@ import {
   weakness,
 } from '../../Skills/DarkMagic';
 import { iceSpear, rainOfFire } from '../../Skills/Destruction';
-import elisithPortrait from '../../../assets/images/portraits/dryeldar/elisith.webp';
+import elisithPortrait from '../../../assets/images/portraits/dryeldar/elisith.jpg';
 import elisithFace from '../../../assets/images/portraits/dryeldar/elisithface.jpg';
-import darkMatronPortrait from '../../../assets/images/portraits/dryeldar/darkmatron2.webp';
+import darkMatronPortrait from '../../../assets/images/portraits/dryeldar/darkmatron2.jpg';
 import darkMatronFace from '../../../assets/images/portraits/dryeldar/darkmatron2face.jpg';
-import twistedJinPortrait from '../../../assets/images/portraits/dryeldar/twistedjin.webp';
+import twistedJinPortrait from '../../../assets/images/portraits/dryeldar/twistedjin.jpg';
 import twistedJinFace from '../../../assets/images/portraits/dryeldar/twistedjinface.jpg';
-import enslavedroynisPortrait from '../../../assets/images/portraits/dryeldar/enslavedroynis.webp';
+import enslavedroynisPortrait from '../../../assets/images/portraits/dryeldar/enslavedroynis.jpg';
 import enslavedroynisFace from '../../../assets/images/portraits/dryeldar/enslavedroynisface.jpg';
-import attacksword from '../../../assets/sounds/attackroynis.mp3';
-import attacktwistedjin from '../../../assets/sounds/attacktwistedjin.mp3';
-import attackdarkmatron from '../../../assets/sounds/attackdarkmatron.mp3';
-import attackelisith from '../../../assets/sounds/attackelisith.mp3';
-import hittedroynis from '../../../assets/sounds/hittedroynis.mp3';
-import hittedtwistedjin from '../../../assets/sounds/hittedtwistedjin.mp3';
-import hitteddarkmatron from '../../../assets/sounds/hitteddarkmatron.mp3';
-import hittedelisith from '../../../assets/sounds/hittedelisith.mp3';
-import deathtwistedjin from '../../../assets/sounds/deathtwistedjin.mp3';
-import deathdarkmatron from '../../../assets/sounds/deathdarkmatron.mp3';
-import deathroynis from '../../../assets/sounds/deathroynis.mp3';
 import { UnitStats } from '../../../types';
+import { soundEngine } from '../../../services/audio/soundEngine';
 
-const attackSword = () => {
-  new Audio(attacksword).play();
-};
+const attackSword = () => soundEngine.play('attack_roynis');
+const attackTwistedJin = () => soundEngine.play('attack_twistedjin');
+const attackDarkMatron = () => soundEngine.play('attack_darkmatron');
+const attackElisith = () => soundEngine.play('attack_elisith');
 
-const attackTwistedJin = () => {
-  new Audio(attacktwistedjin).play();
-};
+const hittedRoynis = () => soundEngine.play('hit_roynis');
+const hittedTwistedJin = () => soundEngine.play('hit_twistedjin');
+const hittedDarkMatron = () => soundEngine.play('hit_darkmatron');
+const hittedElisith = () => soundEngine.play('hit_elisith');
 
-const attackDarkMatron = () => {
-  new Audio(attackdarkmatron).play();
-};
-
-const attackElisith = () => {
-  new Audio(attackelisith).play();
-};
-
-const hittedRoynis = () => {
-  new Audio(hittedroynis).play();
-};
-
-const hittedTwistedJin = () => {
-  new Audio(hittedtwistedjin).play();
-};
-
-const hittedDarkMatron = () => {
-  new Audio(hitteddarkmatron).play();
-};
-
-const hittedElisith = () => {
-  new Audio(hittedelisith).play();
-};
-
-const deathTwistedJin = () => {
-  new Audio(deathtwistedjin).play();
-};
-
-const deathDarkMatron = () => {
-  new Audio(deathdarkmatron).play();
-};
-
-const deathRoynis = () => {
-  new Audio(deathroynis).play();
-};
+const deathTwistedJin = () => soundEngine.play('death_twistedjin');
+const deathDarkMatron = () => soundEngine.play('death_darkmatron');
+const deathRoynis = () => soundEngine.play('death_roynis');
 
 export const elisith: UnitStats = {
   name: 'Elisith',
@@ -93,6 +53,7 @@ export const elisith: UnitStats = {
   skills: [clear, attack, curse, rainOfFire, iceSpear],
   weaknessDamage: 1,
   cursed: false,
+  isRanged: true,
   soundAttack: attackElisith,
   soundHitted: hittedElisith,
   soundDeath: deathRoynis,

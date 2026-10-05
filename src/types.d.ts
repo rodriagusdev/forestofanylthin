@@ -1,6 +1,8 @@
 export type ActionName =
   | 'Combat: Clear Action'
   | 'Combat: Attack'
+  | 'Combat: Defend'
+  | 'Combat: Wait'
   | 'Dark Magic: Curse'
   | 'Dark Magic: Weakness'
   | 'Dark Magic: Shatter Armor'
@@ -10,12 +12,18 @@ export type ActionName =
   | 'Necromancy: Reanimate'
   | 'Necromancy: Vampiric Lust';
 
-interface Skill {
+export interface Skill {
   name: ActionName;
   formattedName: string;
   description: string;
   image: string;
   type: string;
+  targetType?: string;
+  manaCost?: number;
+  schoolTier?: string;
+  quote?: string;
+  mechanics?: string;
+  formula?: string;
 }
 
 export interface UnitStats {
@@ -48,7 +56,44 @@ export interface UnitStats {
   vampiricHeal?: boolean;
   spellpower?: number;
   level?: number;
+  defending?: boolean;
+  hasWaited?: boolean;
+  hasRetaliated?: boolean;
+  isRanged?: boolean;
 }
 
 export type Army = UnitStats[];
 export type Unit = UnitStats;
+
+export interface CombatLogEntry {
+  id: string;
+  turnNumber: number;
+  timestamp: string;
+  actor: {
+    name: string;
+    face: string;
+    belongsTo: string;
+  };
+  actionName: string;
+  actionType: 'attack' | 'spell' | 'status' | 'death' | 'heal';
+  target?: {
+    name: string;
+    face: string;
+    belongsTo: string;
+  };
+  description: string;
+  damageDealt?: number;
+  stacksLost?: number;
+  healAmount?: number;
+  isFatal?: boolean;
+}
+
+export interface FloatingCombatTextEvent {
+  id: string;
+  unitId: string;
+  text: string;
+  type: 'damage' | 'heal' | 'curse' | 'buff' | 'debuff' | 'crit' | 'counter';
+  subtext?: string;
+}
+
+

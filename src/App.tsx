@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { BattleContext } from './context/BattleContext';
 import { useBattleHandler, useZonePreview } from './features/components/App';
 import { BattleUI } from './components/BattleUI/-BattleUI';
@@ -8,6 +8,8 @@ import { HeroSelection } from './components/HeroSelection';
 import { WinOrDefeat } from './components/WinOrDefeat';
 import { ZonePreview } from './components/ZonePreview';
 import { Map } from './components/Map';
+import { AudioControl } from './components/AudioControl';
+import { soundEngine } from './services/audio/soundEngine';
 import './App.css';
 
 function App() {
@@ -27,8 +29,21 @@ function App() {
   const { previewLevelInfo, isVisible, handleVisibility, handlePreviewLevel } =
     useZonePreview();
 
+  // Dynamic Adaptive Battle Music: ONLY active during tactical combat engagements
+  useEffect(() => {
+    if (isInFight && playerArmy.length > 0 && levelsCompleted < 4) {
+      soundEngine.startBattleMusic();
+    } else {
+      soundEngine.stopBattleMusic();
+    }
+    return () => {
+      soundEngine.stopBattleMusic();
+    };
+  }, [isInFight, playerArmy.length, levelsCompleted]);
+
   return (
     <div className="bg-gradient-radial from-zinc-900 via-gray-800/20 to-zinc-900 w-screen min-h-screen">
+      <AudioControl />
       {playerArmy.length < 1 && !isPlaying && (
           <HeroSelection setIsPlaying={setIsPlaying} />
       )}

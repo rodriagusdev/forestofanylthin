@@ -1,21 +1,19 @@
 import dryexaranger from "../../../assets/images/portraits/dryexa/dryexaranger.webp";
 import dryexarangerFace from "../../../assets/images/portraits/dryexa/dryexarangerface.jpg";
-import attackranger from "../../../assets/sounds/attackranger.mp3";
-import hittedranger from "../../../assets/sounds/hittedranger.mp3";
-import deathranger from "../../../assets/sounds/deathranger.mp3";
+import { soundEngine } from "../../../services/audio/soundEngine";
 import { attack, clear } from "../../Skills/Combat";
 import { UnitStats } from "../../../types";
 
 const attackRanger = () => {
-  new Audio(attackranger).play();
+  soundEngine.play("attack_ranger");
 };
 
 const hittedRanger = () => {
-  new Audio(hittedranger).play();
+  soundEngine.play("hit_ranger");
 };
 
 const deathRanger = () => {
-  new Audio(deathranger).play();
+  soundEngine.play("death_ranger");
 };
 
 export const dryexaRanger: UnitStats = {
@@ -40,6 +38,7 @@ export const dryexaRanger: UnitStats = {
   skills: [clear, attack],
   weaknessDamage: 1,
   cursed: false,
+  isRanged: true,
   soundAttack: attackRanger,
   soundHitted: hittedRanger,
   soundDeath: deathRanger,

@@ -1,365 +1,346 @@
 import { useContext } from 'react';
 import { BattleContext } from '../../../../context/BattleContext';
-import { waitTimer } from '../../../../helpers/functions';
 import { Unit } from '../../../../types';
+import {
+  calculatePhysicalAttack,
+  calculateShatterArmorPower,
+  calculateWeaknessMultiplier,
+  calculateRainOfFirePower,
+  calculateIceSpearDamage,
+  calculateRetaliationStrike,
+  applyVampiricHeal,
+} from '../../../../helpers/combat/damageCalculations';
+
+export interface CombatActionResult {
+  updatedCaster: Unit;
+  updatedTarget?: Unit;
+  updatedEnemyArmy?: Unit[];
+  isTargetDead: boolean;
+  isAttackerDead: boolean;
+  deadUnits: Unit[];
+  damageDealt: number;
+  stacksLost: number;
+  vampiricHealAmount?: number;
+  retaliation?: {
+    occurred: boolean;
+    damage: number;
+    stacksLost: number;
+    isAttackerDead: boolean;
+    isCursed: boolean;
+  };
+}
 
 export const useSpells = () => {
-  const { setEnemyArmy, setPlayerArmy, setAction, enemyArmy } =
-    useContext(BattleContext);
+  const { enemyArmy } = useContext(BattleContext);
 
-  // * Combat Skills
+  // * Combat Skills: Physical Attack with Armor Mitigation, Vampiric Drain & Retaliation
+  const attackUnit = (attackingUnit: Unit, attackedUnit: Unit): CombatActionResult => {
+    const attackResult = calculatePhysicalAttack(attackingUnit, attackedUnit);
 
-  const attackUnit = (attackingUnit: Unit, attackedUnit: Unit) =>
-    new Promise<Unit>((resolve) => {
-      const calculatedDamage =
-        Math.ceil(attackingUnit.updatedDamage) * (1 - attackedUnit.armor / 10);
+    let updatedAttacker: Unit = { ...attackingUnit };
 
-      const isCursed = attackingUnit.cursed;
+    // Consume curse if the attacker was cursed
+    if (attackResult.isCursed) {
+      updatedAttacker.cursed = false;
+    }
 
-      const damage = isCursed == true ? 0 : calculatedDamage;
-
-      if (isCursed) {
-        if (attackingUnit.belongsTo == 'player')
-          removeCurse(attackingUnit, setPlayerArmy);
-        else removeCurse(attackingUnit, setEnemyArmy);
-      }
-
-      setAction('Combat: Clear Action');
-
-      attackDamage(attackedUnit, attackingUnit, damage).then(async (unit) => {
-        resolve(unit);
-      });
-    });
-
-  const attackDamage = (
-    attackedUnit: Unit,
-    attackingUnit: Unit,
-    damage: number
-  ) =>
-    new Promise<Unit>((resolve) => {
-      const isVampiric = attackingUnit.vampiricHeal;
-
-      if (isVampiric) {
-        if (attackingUnit.belongsTo == 'player') {
-          vampiricHeal(attackingUnit, damage * 0.6, setPlayerArmy);
-        } else vampiricHeal(attackingUnit, damage * 0.6, setEnemyArmy);
-      }
-
-      const stackLost = Math.floor(damage / attackedUnit.health);
-
-      let attackedUnitNewDamage =
-        attackedUnit.updatedDamage -
-        attackedUnit.damage * stackLost * attackedUnit.weaknessDamage;
-
-      if (attackedUnitNewDamage < 1) attackedUnitNewDamage = 1;
-
-      const unitToUpdate = {
-        ...attackedUnit,
-        updatedHealth: attackedUnit.updatedHealth - damage,
-        updatedDamage: Math.ceil(attackedUnitNewDamage),
-        stack: attackedUnit.stack - damage / attackedUnit.health,
-      };
-
-      updateUnitsInvolvedInSpell(attackingUnit, unitToUpdate).then(
-        (updatedUnit) => {
-          resolve(updatedUnit);
-        }
+    // Apply Vampiric Heal
+    if (attackResult.vampiricHealAmount > 0) {
+      const healRes = applyVampiricHeal(
+        updatedAttacker,
+        attackResult.vampiricHealAmount
       );
-    });
+      updatedAttacker.updatedHealth = healRes.updatedHealth;
+      updatedAttacker.stack = healRes.newStack;
+      updatedAttacker.updatedDamage = healRes.newDamage;
+    }
 
-  const vampiricHeal = (
-    unit: Unit,
-    vampiricHeal: number,
-    setUnitArmy: React.Dispatch<React.SetStateAction<Unit[]>>
-  ) => {
-    let newUnitHealth = unit.updatedHealth + vampiricHeal;
+    let updatedTarget: Unit = {
+      ...attackedUnit,
+      updatedHealth: attackResult.newTargetHealth,
+      updatedDamage: attackResult.newTargetDamage,
+      stack: attackResult.newTargetStack,
+    };
 
-    if (newUnitHealth > unit.maxHealth) newUnitHealth = unit.maxHealth;
+    let isAttackerDead = false;
+    let retaliationInfo: CombatActionResult['retaliation'] = undefined;
 
-    const updateUnit = { ...unit, updatedHealth: newUnitHealth };
-    setUnitArmy((prev) =>
-      prev.map((unit) => {
-        if (unit.id == updateUnit.id) {
-          return updateUnit;
+    // Defender Retaliation Strike (if defender survived and has not retaliated yet this round)
+    if (!attackResult.isTargetDead && !attackedUnit.hasRetaliated) {
+      const retResult = calculateRetaliationStrike(updatedTarget, updatedAttacker);
+      if (retResult.canRetaliate) {
+        updatedTarget = {
+          ...updatedTarget,
+          hasRetaliated: true,
+          cursed: retResult.isCursed ? false : updatedTarget.cursed,
+        };
+
+        if (retResult.vampiricHealAmount > 0) {
+          const retHealRes = applyVampiricHeal(
+            updatedTarget,
+            retResult.vampiricHealAmount
+          );
+          updatedTarget.updatedHealth = retHealRes.updatedHealth;
+          updatedTarget.stack = retHealRes.newStack;
+          updatedTarget.updatedDamage = retHealRes.newDamage;
         }
-        return unit;
-      })
-    );
+
+        updatedAttacker = {
+          ...updatedAttacker,
+          updatedHealth: retResult.newAttackerHealth,
+          updatedDamage: retResult.newAttackerDamage,
+          stack: retResult.newAttackerStack,
+        };
+
+        isAttackerDead = retResult.isAttackerDead;
+
+        retaliationInfo = {
+          occurred: true,
+          damage: retResult.actualDamage,
+          stacksLost: retResult.stacksLost,
+          isAttackerDead: retResult.isAttackerDead,
+          isCursed: retResult.isCursed,
+        };
+      }
+    }
+
+    const deadUnits: Unit[] = [];
+    if (attackResult.isTargetDead) deadUnits.push(updatedTarget);
+    if (isAttackerDead) deadUnits.push(updatedAttacker);
+
+    return {
+      updatedCaster: updatedAttacker,
+      updatedTarget,
+      isTargetDead: attackResult.isTargetDead,
+      isAttackerDead,
+      deadUnits,
+      damageDealt: attackResult.actualDamage,
+      stacksLost: attackResult.stacksLost,
+      vampiricHealAmount: attackResult.vampiricHealAmount,
+      retaliation: retaliationInfo,
+    };
   };
 
   // * Dark Magic Skills
+  const castShatterArmor = (castingUnit: Unit, targetUnit: Unit): CombatActionResult => {
+    const power = calculateShatterArmorPower(castingUnit);
+    const updatedTarget: Unit = {
+      ...targetUnit,
+      armor: targetUnit.armor - power,
+    };
+    const updatedCaster: Unit = {
+      ...castingUnit,
+      magic: Math.max(0, castingUnit.magic - 3),
+    };
 
-  const castShatterArmor = (castingUnit: Unit, targetUnit: Unit) =>
-    new Promise<Unit>((resolve) => {
-      let power = 0;
+    return {
+      updatedCaster,
+      updatedTarget,
+      isTargetDead: false,
+      isAttackerDead: false,
+      deadUnits: [],
+      damageDealt: 0,
+      stacksLost: 0,
+    };
+  };
 
-      if (castingUnit.type == 'Hero' && castingUnit.spellpower) {
-        power = 1 + 1 * castingUnit.spellpower;
-      } else if (castingUnit.type != 'Hero' && castingUnit.level) {
-        power = 1 + 0.7 * castingUnit.stack + castingUnit.level / 2;
-      }
+  const castBreachResistances = (castingUnit: Unit, targetUnit: Unit): CombatActionResult => {
+    const power = 4;
+    const updatedTarget: Unit = {
+      ...targetUnit,
+      magicResistance: targetUnit.magicResistance - power,
+    };
+    const updatedCaster: Unit = {
+      ...castingUnit,
+      magic: Math.max(0, castingUnit.magic - 3),
+    };
 
-      setAction('Combat: Clear Action');
+    return {
+      updatedCaster,
+      updatedTarget,
+      isTargetDead: false,
+      isAttackerDead: false,
+      deadUnits: [],
+      damageDealt: 0,
+      stacksLost: 0,
+    };
+  };
 
-      const updateVulneredUnit = {
-        ...targetUnit,
-        armor: targetUnit.armor - power,
-      };
+  const castWeakness = (castingUnit: Unit, targetUnit: Unit): CombatActionResult => {
+    const multiplier = calculateWeaknessMultiplier(castingUnit);
+    const updatedTarget: Unit = {
+      ...targetUnit,
+      weaknessDamage: multiplier,
+      updatedDamage: Math.max(1, Math.ceil(targetUnit.updatedDamage * multiplier)),
+    };
+    const updatedCaster: Unit = {
+      ...castingUnit,
+      magic: Math.max(0, castingUnit.magic - 2),
+    };
 
-      updateUnitsInvolvedInSpell(castingUnit, updateVulneredUnit, 3).then(
-        (updatedUnit) => {
-          resolve(updatedUnit);
-        }
-      );
-    });
+    return {
+      updatedCaster,
+      updatedTarget,
+      isTargetDead: false,
+      isAttackerDead: false,
+      deadUnits: [],
+      damageDealt: 0,
+      stacksLost: 0,
+    };
+  };
 
-  const castBreachResistances = (castingUnit: Unit, targetUnit: Unit) =>
-    new Promise<Unit>((resolve) => {
-      const power = 4;
+  const castCurse = (castingUnit: Unit, targetUnit: Unit): CombatActionResult => {
+    const updatedTarget: Unit = { ...targetUnit, cursed: true };
+    const updatedCaster: Unit = {
+      ...castingUnit,
+      magic: Math.max(0, castingUnit.magic - 4),
+    };
 
-      setAction('Combat: Clear Action');
-
-      const updateBreachedUnit = {
-        ...targetUnit,
-        magicResistance: targetUnit.magicResistance - power,
-      };
-
-      updateUnitsInvolvedInSpell(castingUnit, updateBreachedUnit, 3).then(
-        (updatedUnit) => {
-          resolve(updatedUnit);
-        }
-      );
-    });
-
-  const castWeakness = (castingUnit: Unit, targetUnit: Unit) =>
-    new Promise<Unit>((resolve) => {
-      let power = 0;
-
-      if (castingUnit.type == 'Hero' && castingUnit.spellpower) {
-        power = 0.7 - 0.07 * castingUnit.spellpower;
-      } else if (castingUnit.type != 'Hero' && castingUnit.level) {
-        power = 0.8 - 0.03 * castingUnit.stack - castingUnit.level * 0.05;
-      }
-
-      setAction('Combat: Clear Action');
-
-      const updateTargetUnit = {
-        ...targetUnit,
-        weaknessDamage: power,
-        updatedDamage: targetUnit.updatedDamage * power,
-      };
-
-      updateUnitsInvolvedInSpell(castingUnit, updateTargetUnit, 2).then(
-        (updatedUnit) => {
-          resolve(updatedUnit);
-        }
-      );
-    });
-
-  const castCurse = (castingUnit: Unit, targetUnit: Unit) =>
-    new Promise<Unit>((resolve) => {
-      const updateCursedUnit = { ...targetUnit, cursed: true };
-
-      updateUnitsInvolvedInSpell(castingUnit, updateCursedUnit, 4).then(
-        (updatedUnit) => {
-          resolve(updatedUnit);
-        }
-      );
-    });
+    return {
+      updatedCaster,
+      updatedTarget,
+      isTargetDead: false,
+      isAttackerDead: false,
+      deadUnits: [],
+      damageDealt: 0,
+      stacksLost: 0,
+    };
+  };
 
   // * Necromancy Skills
+  const castReanimate = (castingUnit: Unit, targetUnit: Unit): CombatActionResult => {
+    const isSelfCast = castingUnit.id === targetUnit.id;
+    const updatedTarget: Unit = {
+      ...targetUnit,
+      updatedHealth: targetUnit.maxHealth,
+      updatedDamage: targetUnit.damage * targetUnit.maxStack,
+      stack: targetUnit.maxStack,
+      weaknessDamage: 1,
+      cursed: false,
+      magic: isSelfCast
+        ? Math.max(0, castingUnit.magic - 6)
+        : targetUnit.magic,
+    };
+    const updatedCaster: Unit = isSelfCast
+      ? updatedTarget
+      : {
+          ...castingUnit,
+          magic: Math.max(0, castingUnit.magic - 6),
+        };
 
-  const castReanimate = (castingUnit: Unit, targetUnit: Unit) =>
-    new Promise<Unit>(async (resolve) => {
-      setAction('Combat: Clear Action');
+    return {
+      updatedCaster,
+      updatedTarget,
+      isTargetDead: false,
+      isAttackerDead: false,
+      deadUnits: [],
+      damageDealt: 0,
+      stacksLost: 0,
+    };
+  };
 
-      const getMaxHealth = targetUnit.maxHealth - targetUnit.updatedHealth;
-      const getNewDamage = Math.ceil(getMaxHealth / targetUnit.damage);
+  const castVampiricLust = (castingUnit: Unit, targetUnit: Unit): CombatActionResult => {
+    const isSelfCast = castingUnit.id === targetUnit.id;
+    const updatedTarget: Unit = {
+      ...targetUnit,
+      vampiricHeal: true,
+      magic: isSelfCast
+        ? Math.max(0, castingUnit.magic - 6)
+        : targetUnit.magic,
+    };
+    const updatedCaster: Unit = isSelfCast
+      ? updatedTarget
+      : {
+          ...castingUnit,
+          magic: Math.max(0, castingUnit.magic - 6),
+        };
 
-      const updateTargetUnit = {
-        ...targetUnit,
-        updatedHealth: targetUnit.updatedHealth + getMaxHealth,
-        updatedDamage: targetUnit.updatedDamage + getNewDamage,
-        stack: targetUnit.maxStack,
-      };
-
-      updateUnitBenefical(castingUnit, updateTargetUnit, setPlayerArmy, 6);
-
-      await waitTimer(100);
-
-      resolve(updateTargetUnit);
-    });
-
-  const castVampiricLust = (castingUnit: Unit, targetUnit: Unit) =>
-    new Promise<Unit>(async (resolve) => {
-      setAction('Combat: Clear Action');
-
-      const updateTargetUnit = {
-        ...targetUnit,
-        vampiricHeal: true,
-      };
-
-      if (updateTargetUnit.belongsTo == 'player')
-        updateUnitInArmy(updateTargetUnit, setPlayerArmy, 6);
-      else updateUnitInArmy(updateTargetUnit, setEnemyArmy, 6);
-
-      await waitTimer(100);
-
-      resolve(updateTargetUnit);
-    });
+    return {
+      updatedCaster,
+      updatedTarget,
+      isTargetDead: false,
+      isAttackerDead: false,
+      deadUnits: [],
+      damageDealt: 0,
+      stacksLost: 0,
+    };
+  };
 
   // * Destruction Skills
+  const castRainOfFire = (
+    castingUnit: Unit,
+    targetEnemies: Unit[] = enemyArmy
+  ): CombatActionResult => {
+    const power = calculateRainOfFirePower(castingUnit);
+    const updatedCaster: Unit = {
+      ...castingUnit,
+      magic: Math.max(0, castingUnit.magic - 10),
+    };
 
-  const castRainOfFire = (castingUnit: Unit, targetUnit: Unit) =>
-    new Promise<Unit>(async (resolve) => {
-      let power = 0;
-
-      if (castingUnit.type == 'Hero' && castingUnit.spellpower) {
-        power = 30 + 5 * castingUnit.spellpower;
-      } else if (castingUnit.type != 'Hero' && castingUnit.level) {
-        power = 10 + 3 * castingUnit.stack + castingUnit.level * 3;
-      }
-
-      setAction('Combat: Clear Action');
-
-      if (castingUnit.belongsTo == 'player') {
-        updateUnitInArmy(castingUnit, setPlayerArmy, 10);
-        updateArmy(enemyArmy, setEnemyArmy, power);
-      }
-
-      await waitTimer(100);
-
-      resolve(targetUnit);
-    });
-
-  const castIceSpear = (castingUnit: Unit, targetUnit: Unit) =>
-    new Promise<Unit>((resolve) => {
-      const damage = 95 * (1 - targetUnit.magicResistance / 10);
-
-      const stackLost = Math.floor(damage / targetUnit.health);
-
-      let attackedUnitNewDamage =
-        targetUnit.updatedDamage -
-        targetUnit.damage * stackLost * targetUnit.weaknessDamage;
-
-      if (attackedUnitNewDamage < 1) attackedUnitNewDamage = 1;
-
-      const unitToUpdate = {
-        ...targetUnit,
-        updatedHealth: targetUnit.updatedHealth - damage,
-        updatedDamage: Math.ceil(attackedUnitNewDamage),
-        stack: targetUnit.stack - damage / targetUnit.health,
-      };
-
-      updateUnitsInvolvedInSpell(castingUnit, unitToUpdate, 7).then(
-        (updatedUnit) => {
-          resolve(updatedUnit);
-        }
-      );
-    });
-
-  const updateArmy = async (
-    targetArmy: Unit[],
-    setTargetArmy: React.Dispatch<React.SetStateAction<Unit[]>>,
-    power: number
-  ) => {
-    const updateUnitsInArmy = targetArmy.map((unit) => {
-      const unitStackInitialDamage = unit.updatedDamage;
+    const deadUnits: Unit[] = [];
+    const updatedEnemyArmy = targetEnemies.map((unit) => {
       const unitStackLost = Math.floor(power / unit.health);
-      const unitBaseDamage = unit.damage;
-      const unitDamageReduced = unit.weaknessDamage;
-      const unitDamageLost = unitStackLost * unitBaseDamage * unitDamageReduced;
+      const unitDamageLost = unitStackLost * unit.damage * (unit.weaknessDamage ?? 1);
 
-      let unitUpdatedDamage = unitStackInitialDamage - unitDamageLost;
+      let unitUpdatedDamage = unit.updatedDamage - unitDamageLost;
+      if (unitUpdatedDamage < 1 && unit.stack > 0) unitUpdatedDamage = 1;
 
-      if (unitUpdatedDamage < 1) unitUpdatedDamage = 1;
-
-      return {
+      const newHp = unit.updatedHealth - power;
+      const updatedUnit: Unit = {
         ...unit,
-        updatedHealth: unit.updatedHealth - power,
-        updatedDamage: unitUpdatedDamage,
-        stack: unit.stack - power / unit.health,
+        updatedHealth: newHp,
+        updatedDamage: Math.ceil(unitUpdatedDamage),
+        stack: Math.max(0, unit.stack - power / unit.health),
       };
-    });
 
-    setTargetArmy(updateUnitsInArmy.filter((units) => units.updatedHealth > 0));
-  };
-
-  const updateUnitBenefical = (
-    castingUnit: Unit,
-    updatedTargetUnit: Unit,
-    setCastingUnitArmy: React.Dispatch<React.SetStateAction<Unit[]>>,
-    magicCost: number
-  ) => {
-    setCastingUnitArmy((prev) =>
-      prev.map((unit) => {
-        if (unit.id == updatedTargetUnit.id) {
-          if (unit.id == castingUnit.id) {
-            return {
-              ...updatedTargetUnit,
-              magic: updatedTargetUnit.magic - magicCost,
-            };
-          } else {
-            return updatedTargetUnit;
-          }
-        }
-        if (unit.id == castingUnit.id) {
-          return {
-            ...castingUnit,
-            magic: castingUnit.magic - magicCost,
-          };
-        }
-        return unit;
-      })
-    );
-  };
-
-  const updateUnitsInvolvedInSpell = (
-    castingUnit: Unit,
-    updatedTargetUnit: Unit,
-    magicCost?: number
-  ) =>
-    new Promise<Unit>(async (resolve) => {
-      if (castingUnit.belongsTo == 'player') {
-        if (magicCost) updateUnitInArmy(castingUnit, setPlayerArmy, magicCost);
-        updateUnitInArmy(updatedTargetUnit, setEnemyArmy, 0);
-      } else {
-        if (magicCost) updateUnitInArmy(castingUnit, setEnemyArmy, magicCost);
-        updateUnitInArmy(updatedTargetUnit, setPlayerArmy, 0);
+      if (newHp <= 0) {
+        deadUnits.push(updatedUnit);
       }
-      resolve(updatedTargetUnit);
+      return updatedUnit;
     });
 
-  const updateUnitInArmy = (
-    updatedUnit: Unit,
-    setUpdatedArmy: React.Dispatch<React.SetStateAction<Unit[]>>,
-    magicCost: number
-  ) => {
-    setUpdatedArmy((prev) =>
-      prev.map((unit) => {
-        if (unit.id == updatedUnit.id) {
-          return { ...updatedUnit, magic: updatedUnit.magic - magicCost };
-        }
-        return unit;
-      })
-    );
+    return {
+      updatedCaster,
+      updatedEnemyArmy,
+      isTargetDead: deadUnits.length > 0,
+      isAttackerDead: false,
+      deadUnits,
+      damageDealt: power,
+      stacksLost: 0,
+    };
   };
 
-  const removeCurse = (
-    castingUnit: Unit,
-    setCursedUnitArmy: React.Dispatch<React.SetStateAction<Unit[]>>
-  ) => {
-    setCursedUnitArmy((prev) =>
-      prev.map((unit) => {
-        if (unit.id == castingUnit.id) {
-          return {
-            ...unit,
-            cursed: false,
-          };
-        }
-        return unit;
-      })
-    );
+  const castIceSpear = (castingUnit: Unit, targetUnit: Unit): CombatActionResult => {
+    const damage = calculateIceSpearDamage(targetUnit);
+    const stacksLost = Math.floor(damage / targetUnit.health);
+    const weaknessMultiplier = targetUnit.weaknessDamage ?? 1;
+
+    let newDamage =
+      targetUnit.updatedDamage - targetUnit.damage * stacksLost * weaknessMultiplier;
+    if (newDamage < 1 && targetUnit.stack > 0) newDamage = 1;
+
+    const updatedTarget: Unit = {
+      ...targetUnit,
+      updatedHealth: targetUnit.updatedHealth - damage,
+      updatedDamage: Math.ceil(newDamage),
+      stack: Math.max(0, targetUnit.stack - damage / targetUnit.health),
+    };
+    const updatedCaster: Unit = {
+      ...castingUnit,
+      magic: Math.max(0, castingUnit.magic - 7),
+    };
+
+    const isTargetDead = updatedTarget.updatedHealth <= 0;
+
+    return {
+      updatedCaster,
+      updatedTarget,
+      isTargetDead,
+      isAttackerDead: false,
+      deadUnits: isTargetDead ? [updatedTarget] : [],
+      damageDealt: damage,
+      stacksLost,
+    };
   };
 
   return {

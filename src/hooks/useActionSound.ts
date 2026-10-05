@@ -1,99 +1,44 @@
-import spellcurse from '../assets/sounds/spellcurse.mp3';
-import spellweakness from '../assets/sounds/spellweakness.mp3';
-import spellshatterarmor from '../assets/sounds/spellshatterarmor.mp3';
-import spellrainoffire from '../assets/sounds/spellrainoffire.mp3';
-import spellicespear from '../assets/sounds/spellicespear.mp3';
-import spellbreachresistances from '../assets/sounds/spellbreachresistance.mp3';
-import spellreanimate from '../assets/sounds/spellreanimate.mp3';
-import spellvampirism from '../assets/sounds/spellvampirism.mp3';
-import previewclick from '../assets/sounds/previewclick.mp3';
-import useSound from 'use-sound';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { soundEngine } from '../services/audio/soundEngine';
 
 export const useActionSound = () => {
-  const [curseSound] = useSound(spellcurse, {
-    volume: 1,
-  });
-  const [weaknessSound] = useSound(spellweakness, {
-    volume: 1,
-  });
+  const [volume, setVolumeState] = useState(soundEngine.getVolume());
+  const [isMuted, setIsMutedState] = useState(soundEngine.isMuted());
 
-  const [shatterArmorSound] = useSound(spellshatterarmor, {
-    volume: 1,
-  });
+  useEffect(() => {
+    return soundEngine.subscribe(() => {
+      setVolumeState(soundEngine.getVolume());
+      setIsMutedState(soundEngine.isMuted());
+    });
+  }, []);
 
-  const [rainOfFireSound] = useSound(spellrainoffire, {
-    volume: 1,
-  });
+  const playPreviewSound = useCallback(() => {
+    soundEngine.playClick();
+  }, []);
 
-  const [iceSpearSound] = useSound(spellicespear, {
-    volume: 1,
-  });
-
-  const [breachResistances] = useSound(spellbreachresistances, {
-    volume: 1,
-  });
-
-  const [reanimateSound] = useSound(spellreanimate, {
-    volume: 1,
-  });
-
-  const [vampiricLustSound] = useSound(spellvampirism, {
-    volume: 1,
-  });
-
-  const [previewSound] = useSound(previewclick, {
-    volume: 1,
-  });
-
-  const playCurse = () => {
-    curseSound();
-  };
-
-  const playWeakness = () => {
-    weaknessSound();
-  };
-
-  const playShatterArmor = () => {
-    shatterArmorSound();
-  };
-
-  const playRainOfFire = () => {
-    rainOfFireSound();
-  };
-
-  const playIceSpear = () => {
-    iceSpearSound();
-  };
-
-  const playBreachResistances = () => {
-    breachResistances();
-  };
-
-  const playReanimate = () => {
-    reanimateSound();
-  };
-
-  const playVampiricLust = () => {
-    vampiricLustSound();
-  };
-
-  const playPreviewSound = () => {
-    previewSound();
-  };
-
-  const spellSounds = {
-    curse: playCurse,
-    weakness: playWeakness,
-    shatterArmor: playShatterArmor,
-    rainOfFire: playRainOfFire,
-    reanimate: playReanimate,
-    vampiricLust: playVampiricLust,
-    iceSpear: playIceSpear,
-    breachResistances: playBreachResistances,
-  };
+  const spellSounds = useMemo(
+    () => ({
+      curse: () => soundEngine.playCurse(),
+      weakness: () => soundEngine.playWeakness(),
+      shatterArmor: () => soundEngine.playShatterArmor(),
+      rainOfFire: () => soundEngine.playRainOfFire(),
+      reanimate: () => soundEngine.playReanimate(),
+      vampiricLust: () => soundEngine.playVampiricLust(),
+      iceSpear: () => soundEngine.playIceSpear(),
+      breachResistances: () => soundEngine.playBreachResistances(),
+    }),
+    []
+  );
 
   return {
     spellSounds,
     playPreviewSound,
+    volume,
+    isMuted,
+    setVolume: (vol: number) => soundEngine.setVolume(vol),
+    setMuted: (muted: boolean) => soundEngine.setMuted(muted),
+    toggleMute: () => soundEngine.toggleMute(),
+    startBattleMusic: () => soundEngine.startBattleMusic(),
+    stopBattleMusic: () => soundEngine.stopBattleMusic(),
   };
 };

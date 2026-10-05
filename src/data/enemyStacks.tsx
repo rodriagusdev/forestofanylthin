@@ -37,6 +37,7 @@ export const cemetery = [
     updatedHealth: lich.health,
     updatedDamage: lich.damage,
     maxStack: 1,
+    maxHealth: lich.health,
   },
 ];
 
@@ -80,6 +81,7 @@ export const forgottenCrypt = [
     updatedHealth: velishAcarys.health,
     updatedDamage: velishAcarys.damage,
     maxStack: 1,
+    maxHealth: velishAcarys.health,
   },
   {
     ...skeleton,

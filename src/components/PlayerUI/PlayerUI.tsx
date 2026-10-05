@@ -28,9 +28,10 @@ const PlayerUI = ({ playerArmy, race }: Props) => {
   } = useContext(BattleContext);
 
   return (
-    <div className="flex flex-col gap-5 sm:gap-0 sm:flex-row items-center justify-between px-2 py-5">
-      {previewUnit != undefined && (
-        <DarkBackgroundWrapper>
+    <div className="flex flex-col gap-4 sm:gap-0 sm:flex-row items-center justify-between px-3 sm:px-6 py-4 bg-gradient-to-r from-black via-zinc-950/90 to-black border-b border-emerald-900/60 shadow-xl select-none">
+      {/* Unit Description Modal */}
+      {previewUnit !== undefined && (
+        <DarkBackgroundWrapper onClose={handleExitUnitPreview}>
           <UnitPreview
             handleExitUnitPreview={handleExitUnitPreview}
             previewUnit={previewUnit}
@@ -38,33 +39,63 @@ const PlayerUI = ({ playerArmy, race }: Props) => {
         </DarkBackgroundWrapper>
       )}
 
-      <img
-        className="h-[180px] w-[180px] object-cover m-4 p-1 border border-emerald-600 rounded-full shadow-[4.0px_8.0px_8.0px_rgba(0,0,0,0.38)] cursor-pointer hover:border-purple-700 transition-colors"
-        src={ydris}
-        alt="Photo of Ydris"
+      {/* Ydris Chronicler Avatar with Ornate Green Frame */}
+      <div
+        className="relative group cursor-pointer flex items-center gap-3"
         onClick={handleVisibility}
-      />
+      >
+        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-emerald-500 p-0.5 bg-black shadow-[0_0_20px_rgba(16,185,129,0.6)] group-hover:border-emerald-400 group-hover:shadow-[0_0_25px_rgba(16,185,129,0.9)] transition-all">
+          <img
+            className="w-full h-full object-cover object-top rounded-full filter brightness-105"
+            src={ydris}
+            alt="Ydris Chronicler"
+          />
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.2 rounded-sm bg-emerald-950 text-emerald-200 border border-emerald-500 text-[8px] font-cinzel font-black tracking-widest uppercase shadow">
+            TALK
+          </span>
+        </div>
+        <div className="hidden md:block">
+          <h4 className="font-cinzel text-xs font-black text-emerald-300 tracking-wider">
+            YDRIS
+          </h4>
+          <p className="text-[10px] font-mono text-zinc-400">War Chronicler</p>
+        </div>
+      </div>
 
-      <div className="flex flex-wrap gap-2 justify-center items-center relative h-auto px-2">
+      {/* Player Army Battalion Units Dock with Green Framing */}
+      <div className="flex flex-wrap gap-3 justify-center items-center relative h-auto px-2">
         {playerArmy.map((unit) => (
-          <div className="h-[100px] w-[100px]" key={unit.id}>
-            <img
-              className="h-[100px] w-[100px] object-cover p-1 border border-zinc-600 rounded-full shadow-[4.0px_8.0px_8.0px_rgba(0,0,0,0.38)] cursor-pointer hover:border-purple-700 transition-colors"
-              src={unit.face}
-              alt={unit.id}
-              onClick={() => handleUnitPreview(unit)}
-            />
-            {unit.type != 'Hero' && (
-              <span className="absolute top-0 border border-white w-8 h-8 bg-purple-700 text-center p-1 m-1">
-                {Math.ceil(unit.stack)}
-              </span>
-            )}
+          <div
+            key={unit.id}
+            onClick={() => handleUnitPreview(unit)}
+            className="group relative flex flex-col items-center cursor-pointer transition-transform hover:scale-105"
+          >
+            {/* Green Circular Frame */}
+            <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-emerald-500/90 p-0.5 bg-black shadow-[0_0_12px_rgba(16,185,129,0.4)] group-hover:border-emerald-400 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.7)] transition-all">
+              <img
+                className="w-full h-full object-cover object-top rounded-full filter brightness-100 contrast-105"
+                src={unit.face}
+                alt={unit.name || unit.id}
+              />
+
+              {/* Stack Multiplier Badge */}
+              {unit.type !== 'Hero' && (
+                <span className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-200 border border-emerald-400 text-[9px] font-mono font-bold shadow-md">
+                  {Math.ceil(unit.stack)}x
+                </span>
+              )}
+            </div>
+
+            <span className="mt-1 text-[9.5px] font-cinzel font-bold text-zinc-300 group-hover:text-emerald-300 max-w-[70px] truncate text-center">
+              {unit.name}
+            </span>
           </div>
         ))}
       </div>
 
+      {/* Dialogue Box Modal */}
       {isVisible && (
-        <DarkBackgroundWrapper>
+        <DarkBackgroundWrapper onClose={handleVisibility}>
           <DialogueBox
             race={race}
             image={ydris}
@@ -73,28 +104,86 @@ const PlayerUI = ({ playerArmy, race }: Props) => {
         </DarkBackgroundWrapper>
       )}
 
+      {/* Dryexa Rangers Reinforcement Modal */}
       {addedDryexaRanger && (
-        <DarkBackgroundWrapper>
-          <div className="flex flex-col p-3 w-[95%] sm:w-[350px] gap-2 items-center justify-center bg-zinc-900/80 border-[6px] border-double border-violet-900/70">
-            <img
-              className="object-cover h-[140px] w-[140px] rounded-full border border-zinc-600 p-1"
-              src={dryexarangerFace}
-            />
-            <h3>You gained 14 dryexa rangers.</h3>
-            <button onClick={() => setAddedDryexaRanger(false)}>CLOSE</button>
+        <DarkBackgroundWrapper onClose={() => setAddedDryexaRanger(false)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative flex flex-col p-6 w-[95%] max-w-sm gap-3 items-center justify-center bg-gradient-to-b from-[#042214]/95 via-[#02130b]/95 to-[#010805]/95 border-2 border-emerald-500 shadow-[0_0_55px_rgba(16,185,129,0.55)] rounded-sm text-zinc-100 select-none animate-in fade-in zoom-in-95 duration-200 z-50"
+          >
+            <span className="absolute -top-1 -left-1 text-xs font-serif text-emerald-400">✦</span>
+            <span className="absolute -top-1 -right-1 text-xs font-serif text-emerald-400">✦</span>
+            <span className="absolute -bottom-1 -left-1 text-xs font-serif text-emerald-400">✦</span>
+            <span className="absolute -bottom-1 -right-1 text-xs font-serif text-emerald-400">✦</span>
+
+            <span className="px-3 py-0.5 rounded-sm bg-emerald-950 border border-emerald-500 text-emerald-200 text-[9px] font-cinzel font-black tracking-widest uppercase">
+              ✦ REINFORCEMENTS GAINED ✦
+            </span>
+
+            <div className="w-24 h-24 rounded-full border-2 border-emerald-400 p-1 bg-black shadow-[0_0_20px_rgba(16,185,129,0.7)] my-1">
+              <img
+                className="w-full h-full object-cover object-top rounded-full"
+                src={dryexarangerFace}
+                alt="Dryexa Rangers"
+              />
+            </div>
+
+            <h3 className="font-cinzel text-base font-black text-white text-center">
+              +14 Dryexa Rangers have joined the ranks as a token of gratitude!
+            </h3>
+            <p className="text-xs text-emerald-200/80 font-serif italic text-center">
+              Elven marksmen have joined your campaign expedition.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setAddedDryexaRanger(false)}
+              className="mt-2 w-full px-6 py-2 rounded-sm bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 border border-emerald-500 text-emerald-200 hover:text-white font-cinzel font-black text-xs tracking-widest uppercase shadow"
+            >
+              Accept Reinforcements
+            </button>
           </div>
         </DarkBackgroundWrapper>
       )}
 
+      {/* Skeletons Reinforcement Modal */}
       {addedSkeletons && (
-        <DarkBackgroundWrapper>
-          <div className="flex flex-col p-3 w-[95%] sm:w-[350px] gap-2 items-center justify-center bg-zinc-900/80 border-[6px] border-double border-violet-900/70">
-            <img
-              className="object-cover h-[140px] w-[140px] rounded-full border border-zinc-600 p-1"
-              src={skeletonFace}
-            />
-            <h3>You gained 40 skeletons.</h3>
-            <button onClick={() => setAddedSkeletons(false)}>CLOSE</button>
+        <DarkBackgroundWrapper onClose={() => setAddedSkeletons(false)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative flex flex-col p-6 w-[95%] max-w-sm gap-3 items-center justify-center bg-gradient-to-b from-[#042214]/95 via-[#02130b]/95 to-[#010805]/95 border-2 border-emerald-500 shadow-[0_0_55px_rgba(16,185,129,0.55)] rounded-sm text-zinc-100 select-none animate-in fade-in zoom-in-95 duration-200 z-50"
+          >
+            <span className="absolute -top-1 -left-1 text-xs font-serif text-emerald-400">✦</span>
+            <span className="absolute -top-1 -right-1 text-xs font-serif text-emerald-400">✦</span>
+            <span className="absolute -bottom-1 -left-1 text-xs font-serif text-emerald-400">✦</span>
+            <span className="absolute -bottom-1 -right-1 text-xs font-serif text-emerald-400">✦</span>
+
+            <span className="px-3 py-0.5 rounded-sm bg-emerald-950 border border-emerald-500 text-emerald-200 text-[9px] font-cinzel font-black tracking-widest uppercase">
+              ✦ REANIMATION COMPLETE ✦
+            </span>
+
+            <div className="w-24 h-24 rounded-full border-2 border-emerald-400 p-1 bg-black shadow-[0_0_20px_rgba(16,185,129,0.7)] my-1">
+              <img
+                className="w-full h-full object-cover object-top rounded-full"
+                src={skeletonFace}
+                alt="Skeletons"
+              />
+            </div>
+
+            <h3 className="font-cinzel text-base font-black text-white text-center">
+              +40 Skeletons Reanimated!
+            </h3>
+            <p className="text-xs text-emerald-200/80 font-serif italic text-center">
+              Fresh bones have arisen to bolster your deathless battalion.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setAddedSkeletons(false)}
+              className="mt-2 w-full px-6 py-2 rounded-sm bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 border border-emerald-500 text-emerald-200 hover:text-white font-cinzel font-black text-xs tracking-widest uppercase shadow"
+            >
+              Command Horde
+            </button>
           </div>
         </DarkBackgroundWrapper>
       )}

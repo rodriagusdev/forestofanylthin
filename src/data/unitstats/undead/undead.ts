@@ -1,93 +1,37 @@
-import skeletonPortrait from "../../../assets/images/portraits/undead/skeleton.webp";
+import skeletonPortrait from "../../../assets/images/portraits/undead/skeleton.jpg";
 import skeletonFace from "../../../assets/images/portraits/undead/skeletonface.jpg";
-import warlockPortrait from "../../../assets/images/portraits/undead/warlock.webp";
+import warlockPortrait from "../../../assets/images/portraits/undead/warlock.jpg";
 import warlockFace from "../../../assets/images/portraits/undead/warlockface.jpg";
 import lichPortrait from "../../../assets/images/portraits/undead/lich.webp";
-import lichFace from "../../../assets/images/portraits/undead/lichface.jpg";
-import nicolaiPortrait from "../../../assets/images/portraits/undead/nicolaisilorn.webp";
-import nicolaiFace from "../../../assets/images/portraits/undead/nicolaisilornface.jpg";
+import lichFace from "../../../assets/images/portraits/undead/lichface.webp";
+import nicolaiPortrait from "../../../assets/images/portraits/undead/nicolai.jpg";
+import nicolaiFace from "../../../assets/images/portraits/undead/nicolaiface.jpg";
 import lorgrenPortrait from "../../../assets/images/portraits/undead/lorgren.jpg";
 import lorgrenFace from "../../../assets/images/portraits/undead/lorgrenface.jpg";
 import velishPortrait from "../../../assets/images/portraits/undead/velishacarys.webp";
 import velishFace from "../../../assets/images/portraits/undead/velishacarysface.jpg";
 import { curse, weakness } from "../../Skills/DarkMagic";
 import { attack, clear } from "../../Skills/Combat";
-import attacklich from "../../../assets/sounds/attacklich.mp3";
-import attackvelish from "../../../assets/sounds/attackvelish.mp3";
-import attacknicolai from "../../../assets/sounds/attacknicolai.mp3";
-import attacksword from "../../../assets/sounds/attackroynis.mp3";
-import attackundeadwarlock from "../../../assets/sounds/attackundeadwarlock.mp3";
-import hittedlich from "../../../assets/sounds/hittedlich.mp3";
-import hittedskeleton from "../../../assets/sounds/hittedskeleton.mp3";
-import hittedundeadwarlock from "../../../assets/sounds/hittedundeadwarlock.mp3";
-import hittednicolai from "../../../assets/sounds/hittednicolai.mp3";
-import hittedvelish from "../../../assets/sounds/hittedvelish.mp3";
-import deathskeleton from "../../../assets/sounds/deathskeleton.mp3";
-import deathlich from "../../../assets/sounds/deathlich.mp3";
-import deathundeadwarlock from "../../../assets/sounds/deathundeadwarlock.mp3";
-import deathvelish from "../../../assets/sounds/deathvelish.mp3";
-import deathnicolai from "../../../assets/sounds/deathnicolai.mp3";
 import { reanimate, vampiricLust } from "../../Skills/Necromancy";
+import { soundEngine } from "../../../services/audio/soundEngine";
 
-const attackSword = () => {
-  new Audio(attacksword).play();
-};
+const attackSword = () => soundEngine.play('attack_roynis');
+const attackLich = () => soundEngine.play('attack_lich');
+const attackVelish = () => soundEngine.play('attack_velish');
+const attackNicolai = () => soundEngine.play('attack_nicolai');
+const attackUndeadWarlock = () => soundEngine.play('attack_undeadwarlock');
 
-const attackLich = () => {
-  new Audio(attacklich).play();
-};
+const hittedLich = () => soundEngine.play('hit_lich');
+const hittedSkeleton = () => soundEngine.play('hit_skeleton');
+const hittedWarlock = () => soundEngine.play('hit_undeadwarlock');
+const hittedNicolai = () => soundEngine.play('hit_nicolai');
+const hittedVelish = () => soundEngine.play('hit_velish');
 
-const attackVelish = () => {
-  new Audio(attackvelish).play();
-};
-
-const attackNicolai = () => {
-  new Audio(attacknicolai).play();
-};
-
-const attackUndeadWarlock = () => {
-  new Audio(attackundeadwarlock).play();
-};
-
-const hittedLich = () => {
-  new Audio(hittedlich).play();
-};
-
-const hittedSkeleton = () => {
-  new Audio(hittedskeleton).play();
-};
-
-const hittedWarlock = () => {
-  new Audio(hittedundeadwarlock).play();
-};
-
-const hittedNicolai = () => {
-  new Audio(hittednicolai).play();
-};
-
-const hittedVelish = () => {
-  new Audio(hittedvelish).play();
-};
-
-const deathVelish = () => {
-  new Audio(deathvelish).play();
-};
-
-const deathNicolai = () => {
-  new Audio(deathnicolai).play();
-};
-
-const deathLich = () => {
-  new Audio(deathlich).play();
-};
-
-const deathSkeleton = () => {
-  new Audio(deathskeleton).play();
-};
-
-const deathUndeadWarlock = () => {
-  new Audio(deathundeadwarlock).play();
-};
+const deathVelish = () => soundEngine.play('death_velish');
+const deathNicolai = () => soundEngine.play('death_nicolai');
+const deathLich = () => soundEngine.play('death_lich');
+const deathSkeleton = () => soundEngine.play('death_skeleton');
+const deathUndeadWarlock = () => soundEngine.play('death_undeadwarlock');
 
 export const nicolaiSilorn = {
   name: "Nicolai of Silorn",
@@ -221,6 +165,7 @@ export const undeadWarlock = {
   weaknessDamage: 1,
   cursed: false,
   vampiricHeal: false,
+  isRanged: true,
   soundAttack: attackUndeadWarlock,
   soundHitted: hittedWarlock,
   soundDeath: deathUndeadWarlock,
@@ -249,6 +194,7 @@ export const lich = {
   weaknessDamage: 1,
   cursed: false,
   vampiricHeal: false,
+  isRanged: true,
   soundAttack: attackLich,
   soundHitted: hittedLich,
   soundDeath: deathLich,

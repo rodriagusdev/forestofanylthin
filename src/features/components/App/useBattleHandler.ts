@@ -2,11 +2,29 @@ import { useContext, useEffect, useState } from 'react';
 import { BattleContext } from '../../../context/BattleContext';
 import { dryexaRanger } from '../../../data/unitstats/dryexa/dryexa';
 import { skeleton } from '../../../data/unitstats/undead/undead';
+import { ZONES, ZoneId } from '../../../data/zones/zones';
 import { Army } from '../../../types';
+
+const restoreArmy = (army: Army): Army => {
+  return army.map((unit) => ({
+    ...unit,
+    stack: Math.ceil(unit.stack),
+    maxStack: Math.ceil(unit.stack),
+    updatedHealth: unit.health * Math.ceil(unit.stack),
+    maxHealth: unit.health * Math.ceil(unit.stack),
+    updatedDamage: unit.damage * Math.ceil(unit.stack),
+    magic: unit.maxMagic,
+    maxMagic: unit.maxMagic,
+    cursed: false,
+    vampiricHeal: false,
+    weaknessDamage: 1,
+  }));
+};
 
 export const useBattleHandler = () => {
   const {
     playerRace,
+    isInFight,
     setIsInFight,
     setEnemyArmy,
     setUnitPosition,
@@ -16,15 +34,15 @@ export const useBattleHandler = () => {
     enemyArmy,
     setAddedDryexaRanger,
     setAddedSkeletons,
+    setCurrentZone,
+    setCurrentZoneImage,
+    setFallenAllies,
   } = useContext(BattleContext);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [levelsCompleted, setLevelsCompleted] = useState(0);
 
-  const [isInCemetery, setIsInCemetery] = useState(false);
-  const [isInGloomyForest, setIsInGloomyForest] = useState(false);
-  const [isInLostGlade, setIsInLostGlade] = useState(false);
-  const [isInSacre, setIsInSacre] = useState(false);
+  const [activeZone, setActiveZone] = useState<ZoneId | null>(null);
 
   const [isCemeteryCompleted, setIsCemeteryCompleted] = useState(false);
   const [isGloomyForestCompleted, setIsGloomyForestCompleted] = useState(false);
@@ -32,137 +50,113 @@ export const useBattleHandler = () => {
   const [isSacreCompleted, setIsSacreCompleted] = useState(false);
 
   const handleInFight = async (enemiesToAdd: Army, level?: string) => {
-    switch (level) {
+    const zoneKey = (level as ZoneId) || 'Cemetery';
+    if (ZONES[zoneKey]) {
+      setCurrentZone(zoneKey);
+      setCurrentZoneImage(ZONES[zoneKey].image);
+    }
+
+    setActiveZone(zoneKey);
+
+    switch (zoneKey) {
       case 'Cemetery':
-        setIsInCemetery(true);
         setIsCemeteryCompleted(true);
         break;
       case 'Gloomy Forest':
-        setIsInGloomyForest(true);
         setIsGloomyForestCompleted(true);
         break;
       case 'Lost Glade':
-        setIsInLostGlade(true);
         setIsLostGladeCompleted(true);
         break;
       case 'Sacrelthar':
-        setIsInSacre(true);
         setIsSacreCompleted(true);
         break;
     }
+
     setIsInFight(true);
     setEnemyArmy([...enemiesToAdd]);
+    setFallenAllies([]);
     setUnitPosition(0);
   };
 
-  const restoreArmyAfterFightIsEnded = () =>
-    new Promise<Army>((resolve) => {
-      const updateArmy = playerArmy.map((unit) => {
-        return {
-          ...unit,
-          stack: Math.ceil(unit.stack),
-          maxStack: Math.ceil(unit.stack),
-          updatedHealth: unit.health * Math.ceil(unit.stack),
-          maxHealth: unit.health * Math.ceil(unit.stack),
-          updatedDamage: unit.damage * Math.ceil(unit.stack),
-          magic: unit.maxMagic,
-          maxMagic: unit.maxMagic,
-          cursed: false,
-          vampiricHeal: false,
-          weaknessDamage: 1,
-        };
-      });
-      setPlayerArmy(updateArmy);
-      resolve(updateArmy);
-    });
-
   useEffect(() => {
-    if (playerArmy.length == 0) {
-      setIsInFight(false);
-      setUnitsInBoard([]);
-      setUnitPosition(0);
-    }
-    if (enemyArmy.length == 0 && isPlaying) {
-      setIsInFight(false);
-      setUnitsInBoard([]);
-      setUnitPosition(0);
-      if (isInCemetery) {
-        setLevelsCompleted((current) => current + 1);
+    if (!isInFight || !isPlaying) return;
 
-        if (playerRace == 'undead') {
-          restoreArmyAfterFightIsEnded().then((healedArmy) => {
-            const areSkeletonsInArmy = healedArmy.find(
-              (unit) => unit.id == 'nicolaiSkeleton'
-            );
-            if (areSkeletonsInArmy) {
-              const addToArmy = healedArmy.map((unit) => {
-                if (unit.id == 'nicolaiSkeleton') {
-                  return {
-                    ...unit,
-                    stack: unit.stack + 50,
-                    updatedHealth: unit.updatedHealth + unit.health * 50,
-                    updatedDamage: unit.updatedDamage + unit.damage * 50,
-                    maxStack: unit.maxStack + 50,
-                    maxHealth: unit.health * (unit.stack + 50),
-                  };
-                }
-                return unit;
-              });
-              setPlayerArmy(addToArmy);
-            } else {
-              setPlayerArmy(
-                healedArmy.concat({
-                  ...skeleton,
-                  stack: 50,
-                  maxStack: 50,
-                  maxHealth: skeleton.health * (skeleton.stack + 50),
-                  updatedDamage: skeleton.damage * 50,
-                  updatedHealth: skeleton.health * 50,
-                  belongsTo: 'player',
-                })
-              );
-            }
-            setAddedSkeletons(true);
-          });
-        }
-        setIsInCemetery(false);
-      }
-      if (isInGloomyForest) {
-        setLevelsCompleted((current) => current + 1);
-        restoreArmyAfterFightIsEnded().then((healedArmy) => {
-          setPlayerArmy(
-            healedArmy.concat({
-              ...dryexaRanger,
-              stack: 14,
-              maxStack: 14,
-              maxHealth: dryexaRanger.health * (dryexaRanger.stack + 14),
-              updatedDamage: dryexaRanger.damage * 14,
-              updatedHealth: dryexaRanger.health * 14,
-              belongsTo: 'player',
-            })
-          );
-        });
-        setAddedDryexaRanger(true);
-        setIsInGloomyForest(false);
-      }
-      if (isInLostGlade) {
-        restoreArmyAfterFightIsEnded();
-        setLevelsCompleted((current) => current + 1);
-        setIsInLostGlade(false);
-      }
-      if (isInSacre) {
-        restoreArmyAfterFightIsEnded();
-        setLevelsCompleted((current) => current + 1);
-        setIsInSacre(false);
-      }
+    // Defeat Condition
+    if (playerArmy.length === 0) {
+      setIsInFight(false);
+      setUnitsInBoard([]);
+      setUnitPosition(0);
+      return;
     }
-  }, [enemyArmy, playerArmy]);
+
+    // Victory Condition
+    if (enemyArmy.length === 0) {
+      setIsInFight(false);
+      setUnitsInBoard([]);
+      setUnitPosition(0);
+      setLevelsCompleted((prev) => prev + 1);
+
+      let updatedArmy = restoreArmy(playerArmy);
+
+      if (activeZone === 'Cemetery' && playerRace === 'undead') {
+        const hasSkeletons = updatedArmy.some((u) => u.id === 'nicolaiSkeleton');
+        if (hasSkeletons) {
+          updatedArmy = updatedArmy.map((unit) => {
+            if (unit.id === 'nicolaiSkeleton') {
+              const newStack = unit.stack + 50;
+              return {
+                ...unit,
+                stack: newStack,
+                maxStack: unit.maxStack + 50,
+                updatedHealth: unit.updatedHealth + unit.health * 50,
+                maxHealth: unit.health * newStack,
+                updatedDamage: unit.updatedDamage + unit.damage * 50,
+              };
+            }
+            return unit;
+          });
+        } else {
+          updatedArmy = [
+            ...updatedArmy,
+            {
+              ...skeleton,
+              stack: 50,
+              maxStack: 50,
+              maxHealth: skeleton.health * (skeleton.stack + 50),
+              updatedDamage: skeleton.damage * 50,
+              updatedHealth: skeleton.health * 50,
+              belongsTo: 'player',
+            },
+          ];
+        }
+        setAddedSkeletons(true);
+      } else if (activeZone === 'Gloomy Forest') {
+        updatedArmy = [
+          ...updatedArmy,
+          {
+            ...dryexaRanger,
+            stack: 14,
+            maxStack: 14,
+            maxHealth: dryexaRanger.health * (dryexaRanger.stack + 14),
+            updatedDamage: dryexaRanger.damage * 14,
+            updatedHealth: dryexaRanger.health * 14,
+            belongsTo: 'player',
+          },
+        ];
+        setAddedDryexaRanger(true);
+      }
+
+      setPlayerArmy(updatedArmy);
+      setActiveZone(null);
+    }
+  }, [enemyArmy.length, playerArmy.length, isInFight, isPlaying]);
 
   return {
-    isInCemetery,
-    isInGloomyForest,
-    isInLostGlade,
-    isInSacre,
+    isInCemetery: activeZone === 'Cemetery',
+    isInGloomyForest: activeZone === 'Gloomy Forest',
+    isInLostGlade: activeZone === 'Lost Glade',
+    isInSacre: activeZone === 'Sacrelthar',
     isCemeteryCompleted,
     isGloomyForestCompleted,
     isLostGladeCompleted,

@@ -3,28 +3,33 @@ import { BattleContext } from '../../../../context/BattleContext';
 import { useBattle } from './useBattle';
 
 export const useGetPlayingUnit = () => {
-  const { unitsInBoard, unitPosition, playerArmy, turn } =
+  const { unitsInBoard, unitPosition, playerArmy, turn, isInFight } =
     useContext(BattleContext);
 
   const { selectUnit } = useBattle();
 
   useEffect(() => {
+    if (!isInFight || !unitsInBoard || unitsInBoard.length === 0) return;
+
     const playingUnit = unitsInBoard[unitPosition];
-    const getUnitOwnership = playingUnit?.belongsTo.split(' ');
-    const unitIsEnemy = getUnitOwnership?.includes('enemy');
+    if (!playingUnit) return;
 
-    if (unitIsEnemy) {
-      const AIAttacksPosition = Math.floor(Math.random() * playerArmy.length);
+    const unitIsEnemy = playingUnit.belongsTo === 'enemy';
 
-      const targetUnitInPlayerArmy = playerArmy.find(
-        (unit) => unit.id == playerArmy[AIAttacksPosition].id
-      );
+    if (unitIsEnemy && playerArmy.length > 0) {
+      // Pick a random target from living player units
+      const targetIndex = Math.floor(Math.random() * playerArmy.length);
+      const targetUnit = playerArmy[targetIndex];
 
-      if (targetUnitInPlayerArmy != undefined) {
-        selectUnit(targetUnitInPlayerArmy);
+      if (targetUnit) {
+        const timer = setTimeout(() => {
+          selectUnit(targetUnit);
+        }, 600);
+
+        return () => clearTimeout(timer);
       }
     }
-  }, [turn]);
+  }, [turn, unitPosition, isInFight]);
 
   return {};
 };

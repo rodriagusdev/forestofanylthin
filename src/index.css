@@ -3,24 +3,283 @@
 @tailwind utilities;
 
 @layer base {
-  button {
-    @apply bg-gray-800/50 transition-colors border border-transparent border-t-4 border-t-violet-700 px-10 h-[40px] hover:border-white hover:border hover:border-t-4 focus:border-gray-400;
+  button:not([data-unstyled]) {
+    @apply transition-all duration-200;
   }
 }
 
 @layer components {
-
   .statStyle {
-    @apply h-[27px] w-[27px]
+    @apply h-[27px] w-[27px];
   }
 
   .statStyleSmaller {
-    @apply h-[19px] w-[19px]
+    @apply h-[19px] w-[19px];
+  }
+
+  /* Ornate Crystalline Filigree Lines */
+  .er-divider {
+    @apply flex items-center justify-center gap-4 text-fuchsia-400/40 my-4;
+  }
+  .er-divider::before,
+  .er-divider::after {
+    content: '';
+    @apply flex-1 h-[1px] bg-gradient-to-r from-transparent via-fuchsia-500/40 to-transparent;
+  }
+
+  /* No Scrollbar Utility */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Dark Fantasy Army Horizontal Scrollbar */
+  .dark-fantasy-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(217, 70, 239, 0.6) rgba(10, 3, 18, 0.9);
+  }
+  .dark-fantasy-scrollbar::-webkit-scrollbar {
+    height: 6px;
+  }
+  .dark-fantasy-scrollbar::-webkit-scrollbar-track {
+    background: rgba(10, 3, 18, 0.9);
+    border-radius: 9999px;
+  }
+  .dark-fantasy-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #9333ea, #ec4899);
+    border-radius: 9999px;
+    box-shadow: 0 0 8px rgba(236, 72, 153, 0.7);
+  }
+
+  /* Crystalline Amethyst & Rose-Thorn Faceted Frame */
+  .painting-frame {
+    border: 3px solid #c026d3;
+    outline: 2px solid #f472b6;
+    outline-offset: -5px;
+    box-shadow: 
+      0 0 0 5px #3b0764,
+      0 0 0 8px #581c87,
+      0 0 0 11px #090214,
+      0 0 50px rgba(0, 0, 0, 0.98),
+      0 0 35px rgba(217, 70, 239, 0.55),
+      inset 0 0 60px rgba(46, 16, 101, 0.95);
+  }
+
+  /* Jeweled Luminous Contrasts Token Shadows */
+  .shadow-jewel-ruby {
+    box-shadow: 0 0 25px rgba(244, 63, 94, 0.65), inset 0 0 12px rgba(225, 29, 72, 0.4);
+  }
+  .shadow-jewel-sapphire {
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.65), inset 0 0 12px rgba(14, 165, 233, 0.4);
+  }
+  .shadow-jewel-emerald {
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.65), inset 0 0 12px rgba(5, 150, 105, 0.4);
+  }
+  .shadow-jewel-amethyst {
+    box-shadow: 0 0 35px rgba(217, 70, 239, 0.8), inset 0 0 18px rgba(168, 85, 247, 0.6);
+  }
+  .shadow-jewel-gold {
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.75), inset 0 0 15px rgba(251, 191, 36, 0.4);
+  }
+
+  /* Royal Violet & Crystalline Thorn Canvas */
+  .smoked-velvet-canvas {
+    background: 
+      radial-gradient(ellipse at 50% 25%, rgba(68, 21, 105, 0.85) 0%, rgba(30, 9, 48, 0.97) 50%, #08020e 100%),
+      radial-gradient(circle at 85% 85%, rgba(60, 12, 85, 0.5) 0%, transparent 60%),
+      #08020e;
+    box-shadow: 
+      inset 0 0 80px rgba(0, 0, 0, 0.98),
+      inset 0 0 140px rgba(35, 8, 55, 0.92);
+  }
+
+  /* Royal Amethyst Reliquary Card */
+  .velvet-reliquary-card {
+    background: linear-gradient(180deg, rgba(58, 18, 88, 0.96) 0%, rgba(28, 9, 45, 0.98) 55%, rgba(10, 3, 18, 0.99) 100%);
+    box-shadow: 
+      0 12px 30px rgba(0, 0, 0, 0.94),
+      inset 0 1px 0 rgba(244, 114, 182, 0.4),
+      inset 0 0 25px rgba(0, 0, 0, 0.85);
+  }
+
+  /* Royal Amethyst Chronicles Aside */
+  .smoked-velvet-scroll {
+    background: linear-gradient(180deg, rgba(48, 15, 75, 0.97) 0%, rgba(24, 7, 38, 0.98) 50%, rgba(9, 2, 15, 0.99) 100%);
+    box-shadow: 
+      0 0 45px rgba(0, 0, 0, 0.95),
+      inset 0 1px 0 rgba(244, 114, 182, 0.3),
+      inset 0 0 35px rgba(0, 0, 0, 0.92);
+  }
+
+  /* Crystal Thorn Badge */
+  .crystal-thorn-badge {
+    background: linear-gradient(180deg, #4c1d95 0%, #2e1065 50%, #0f051d 100%);
+    border: 1.5px solid #d946ef;
+    box-shadow: 0 0 15px rgba(217, 70, 239, 0.6), inset 0 1px 0 rgba(244, 114, 182, 0.7);
   }
 }
 
+@keyframes float-combat-text {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.75);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1.12);
+  }
+  35% {
+    transform: translate(-50%, -10px) scale(1.0);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -20px) scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(0.9);
+  }
+}
+
+.animate-combat-number {
+  animation: float-combat-text 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes combat-screen-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  15% { transform: translate(-3px, -2px) rotate(-0.4deg); }
+  30% { transform: translate(3px, 2px) rotate(0.4deg); }
+  45% { transform: translate(-2px, 3px) rotate(-0.3deg); }
+  60% { transform: translate(2px, -1px) rotate(0.2deg); }
+  75% { transform: translate(-1px, 2px) rotate(-0.1deg); }
+  90% { transform: translate(1px, -1px) rotate(0deg); }
+}
+
+.animate-combat-screen-shake {
+  animation: combat-screen-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes combat-screen-shake-heavy {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  10% { transform: translate(-8px, -6px) rotate(-1.2deg) scale(1.02); }
+  20% { transform: translate(8px, 6px) rotate(1.2deg) scale(1.02); }
+  35% { transform: translate(-6px, 5px) rotate(-0.8deg) scale(1.01); }
+  50% { transform: translate(6px, -4px) rotate(0.6deg); }
+  65% { transform: translate(-4px, 3px) rotate(-0.4deg); }
+  80% { transform: translate(3px, -2px) rotate(0.2deg); }
+  90% { transform: translate(-1px, 1px) rotate(0deg); }
+}
+
+.animate-combat-screen-shake-heavy {
+  animation: combat-screen-shake-heavy 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes combat-screen-shake-apocalyptic {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  6% { transform: translate(-14px, -10px) rotate(-2.5deg) scale(1.05); }
+  14% { transform: translate(14px, 10px) rotate(2.5deg) scale(1.05); }
+  22% { transform: translate(-12px, 9px) rotate(-2deg) scale(1.03); }
+  32% { transform: translate(11px, -9px) rotate(1.8deg) scale(1.03); }
+  44% { transform: translate(-9px, 7px) rotate(-1.2deg) scale(1.02); }
+  56% { transform: translate(8px, -6px) rotate(0.9deg) scale(1.01); }
+  68% { transform: translate(-6px, 4px) rotate(-0.5deg); }
+  80% { transform: translate(4px, -3px) rotate(0.3deg); }
+  90% { transform: translate(-2px, 2px) rotate(-0.1deg); }
+}
+
+.animate-combat-screen-shake-apocalyptic {
+  animation: combat-screen-shake-apocalyptic 1.1s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes firestorm-flash {
+  0% { opacity: 0; filter: brightness(1); }
+  12% { opacity: 1; filter: brightness(1.7) contrast(1.4); }
+  35% { opacity: 0.9; filter: brightness(1.4); }
+  65% { opacity: 0.6; }
+  100% { opacity: 0; filter: brightness(1); }
+}
+
+.animate-firestorm-flash {
+  animation: firestorm-flash 1.2s ease-out forwards;
+}
+
+@keyframes meteor-descent {
+  0% { transform: translateY(-120%) translateX(-40px) scale(0.6); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(140%) translateX(60px) scale(1.2); opacity: 0; }
+}
+
+.animate-meteor-1 {
+  animation: meteor-descent 0.75s ease-in forwards;
+}
+.animate-meteor-2 {
+  animation: meteor-descent 0.9s ease-in 0.15s forwards;
+}
+.animate-meteor-3 {
+  animation: meteor-descent 0.8s ease-in 0.25s forwards;
+}
+.animate-meteor-4 {
+  animation: meteor-descent 1.0s ease-in 0.1s forwards;
+}
+
+@keyframes combat-screen-flash {
+  0% { opacity: 0; }
+  25% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+.animate-screen-flash {
+  animation: combat-screen-flash 0.5s ease-out forwards;
+}
+
+@keyframes combat-curse-flash {
+  0% { opacity: 0; transform: scale(0.98); }
+  20% { opacity: 0.85; transform: scale(1.01); }
+  60% { opacity: 0.65; }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+.animate-curse-flash {
+  animation: combat-curse-flash 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ethereal-queue-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(244, 114, 182, 0.7), inset 0 0 10px rgba(217, 70, 239, 0.5);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(244, 114, 182, 1), inset 0 0 20px rgba(217, 70, 239, 0.8);
+    transform: scale(1.04);
+  }
+}
+
+.animate-ethereal-beacon {
+  animation: ethereal-queue-pulse 1.2s ease-in-out infinite;
+}
+
+
+@keyframes atmospheric-drift {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-20px) scale(1.08);
+    opacity: 0.7;
+  }
+}
+
+.animate-atmospheric-drift {
+  animation: atmospheric-drift 8s ease-in-out infinite;
+}
+
 :root {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
@@ -29,8 +288,8 @@
   --font-medium: .9rem;
   --font-large: 1.33rem;
 
-  color: #d5d6db;
-  background-color: #1a1b26;
+  color: #f3e8ff;
+  background-color: #06020a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -40,20 +299,10 @@
   padding: 0;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-height: 100%;
-  min-width: 280px;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  background-color: #06020a;
 }
