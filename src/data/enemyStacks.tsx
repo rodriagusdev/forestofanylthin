@@ -1,4 +1,5 @@
 import {
+  eldare,
   lich,
   skeleton,
   undeadWarlock,
@@ -112,6 +113,27 @@ export const forgottenCrypt = [
     updatedDamage: lich.damage * 5,
     maxStack: 5,
     maxHealth: lich.health * 5,
+  },
+  {
+    ...skeleton,
+    stack: 38,
+    id: "Crypt Skeleton2",
+    belongsTo: "enemy",
+    updatedHealth: skeleton.health * 38,
+    updatedDamage: skeleton.damage * 38,
+    maxStack: 38,
+    maxHealth: skeleton.health * 38,
+  },
+];
+
+export const eldareBatallion = [
+  {
+    ...eldare,
+    belongsTo: "enemy",
+    updatedHealth: eldare.health,
+    updatedDamage: eldare.damage,
+    maxStack: 1,
+    maxHealth: eldare.health,
   },
   {
     ...skeleton,

@@ -1,18 +1,19 @@
 import { useContext, useRef } from 'react';
-import { BattleContext } from '../../../../context/BattleContext';
-import { Skill, Army, Unit } from '../../../../types';
+import { BattleContext } from '../../../context/BattleContext';
+import { Skill, Army, Unit } from '../../../types';
 import { useSpells, CombatActionResult } from './useSpells';
 import {
   breachResistances,
   curse,
   shatterArmor,
   weakness,
-} from '../../../../data/Skills/DarkMagic';
-import { attack } from '../../../../data/Skills/Combat';
-import { iceSpear, rainOfFire } from '../../../../data/Skills/Destruction';
-import { reanimate, vampiricLust } from '../../../../data/Skills/Necromancy';
-import { useActionSound } from '../../../../hooks/useActionSound';
-import { waitTimer } from '../../../../helpers/functions';
+} from '../../../data/Skills/DarkMagic';
+import { attack } from '../../../data/Skills/Combat';
+import { iceSpear, rainOfFire } from '../../../data/Skills/Destruction';
+import { reanimate, vampiricLust } from '../../../data/Skills/Necromancy';
+import { useActionSound } from '../../../hooks/useActionSound';
+import { waitTimer } from '../../../helpers/functions';
+import { useBattleStore } from '../../../store/useBattleStore';
 
 export const useBattle = () => {
   const {
@@ -186,15 +187,33 @@ export const useBattle = () => {
       setMagicUsedInTurn(10);
       if (spellSounds.rainOfFire) spellSounds.rainOfFire();
 
-      const dummyTarget = enemyArmy[0] || ({
+      const dummyTarget: Unit = enemyArmy[0] || {
+        id: 'dummy_target',
         name: 'Enemy Division',
+        type: 'Creature',
         face: playingUnit.face,
+        portrait: playingUnit.face,
         belongsTo: 'enemy',
         updatedHealth: 100,
         maxHealth: 100,
         health: 10,
+        damage: 10,
+        updatedDamage: 10,
+        armor: 0,
+        initialArmor: 0,
+        magicResistance: 0,
+        magic: 0,
+        maxMagic: 0,
+        initiative: '1',
         stack: 10,
-      } as Unit);
+        maxStack: 10,
+        skills: [],
+        weaknessDamage: 1,
+        cursed: false,
+        soundAttack: () => {},
+        soundHitted: () => {},
+        soundDeath: () => {},
+      };
 
       setPlayingUnit(playingUnit);
       setTargetUnit(dummyTarget);
@@ -242,6 +261,7 @@ export const useBattle = () => {
       // Handle casualties from AoE
       if (result.deadUnits.length > 0) {
         for (const dead of result.deadUnits) {
+          useBattleStore.getState().recordUnitKill(playingUnit, dead);
           if (typeof dead.soundDeath === 'function') dead.soundDeath();
           setDeadUnit(dead);
           addCombatLog({
@@ -262,7 +282,7 @@ export const useBattle = () => {
             isFatal: true,
           });
           await waitTimer(1800);
-          setDeadUnit({} as Unit);
+          setDeadUnit(null);
         }
       }
 
@@ -557,8 +577,9 @@ export const useBattle = () => {
         });
       }
 
-      // Handle target death memorial
+      // Handle target death memorial & record kill for Morale system
       if (result.isTargetDead && result.updatedTarget) {
+        useBattleStore.getState().recordUnitKill(playingUnit, result.updatedTarget);
         if (typeof result.updatedTarget.soundDeath === 'function') {
           result.updatedTarget.soundDeath();
         }
@@ -581,11 +602,12 @@ export const useBattle = () => {
         });
         setDeadUnit(result.updatedTarget);
         await waitTimer(2000);
-        setDeadUnit({} as Unit);
+        setDeadUnit(null);
       }
 
       // Handle retaliation fatal strike on attacker
       if (result.isAttackerDead) {
+        useBattleStore.getState().recordUnitKill(targetUnit, result.updatedCaster);
         if (typeof result.updatedCaster.soundDeath === 'function') {
           result.updatedCaster.soundDeath();
         }
@@ -608,7 +630,7 @@ export const useBattle = () => {
         });
         setDeadUnit(result.updatedCaster);
         await waitTimer(2000);
-        setDeadUnit({} as Unit);
+        setDeadUnit(null);
       }
 
       const deadIds = new Set(result.deadUnits.map((d) => d.id));

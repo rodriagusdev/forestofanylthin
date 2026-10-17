@@ -175,13 +175,24 @@ export function calculateRainOfFirePower(caster: Unit): number {
  * Calculates Destruction: Ice Spear single-target burst damage.
  *
  * Formula:
- * - Base damage: 95
+ * - Hero Base damage: 95 + (8 * spellpower)
+ * - Creature Base damage: 40 + (5 * stack) + (5 * level)
  * - Resistance Multiplier: 1 - (magicResistance / 10)
- *   (e.g., breached resistance of -4 turns multiplier into 1.4x = 133 damage)
+ *   (e.g., breached resistance of -4 turns multiplier into 1.4x)
  */
-export function calculateIceSpearDamage(target: Unit): number {
+export function calculateIceSpearDamage(target: Unit, caster?: Unit): number {
+  let baseDamage = 95;
+  if (caster) {
+    if (caster.type === 'Hero') {
+      const sp = caster.spellpower ?? 0;
+      baseDamage = 95 + 8 * sp;
+    } else {
+      const level = caster.level ?? 1;
+      baseDamage = 40 + 5 * caster.stack + level * 5;
+    }
+  }
   const resistanceMultiplier = 1 - target.magicResistance / 10;
-  return Math.round(95 * resistanceMultiplier);
+  return Math.round(baseDamage * resistanceMultiplier);
 }
 
 export interface CombatForecast {
@@ -215,7 +226,7 @@ export function calculateCombatForecast(
   }
 
   if (actionName === 'Destruction: Ice Spear') {
-    const dmg = calculateIceSpearDamage(target);
+    const dmg = calculateIceSpearDamage(target, attacker);
     const kills = Math.min(
       Math.ceil(target.stack),
       Math.floor(dmg / target.health)

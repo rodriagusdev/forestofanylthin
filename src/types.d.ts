@@ -96,4 +96,6 @@ export interface FloatingCombatTextEvent {
   subtext?: string;
 }
 
+export * from './types/inventory';
+
 

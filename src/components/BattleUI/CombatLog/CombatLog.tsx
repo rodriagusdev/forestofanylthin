@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { BattleContext } from '../../../context/BattleContext';
 import { CombatLogEntry, Unit } from '../../../types';
-import { useBattle } from '../../../features/components/BattleUI/-BattleUI/useBattle';
+import { useBattle } from '../../../features/components/BattleUI';
 
 export const CombatLog = () => {
   const {

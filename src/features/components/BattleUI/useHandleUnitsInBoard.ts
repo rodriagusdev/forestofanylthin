@@ -1,5 +1,5 @@
 import { useContext, useEffect } from 'react';
-import { BattleContext } from '../../../../context/BattleContext';
+import { BattleContext } from '../../../context/BattleContext';
 
 export const useHandleUnitsInBoard = () => {
   const { setUnitsInBoard, setTurn, setUnitPosition, playerArmy, enemyArmy, isInFight } =

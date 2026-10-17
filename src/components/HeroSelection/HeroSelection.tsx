@@ -2,6 +2,7 @@ import { useContext, useState } from 'react';
 import { playerUndead } from '../../data/playerInitialStack/undeadStart';
 import { playerDryeldar } from '../../data/playerInitialStack/dryeldarStart';
 import { BattleContext } from '../../context/BattleContext';
+import { useCampaignStore } from '../../store/useCampaignStore';
 import { Army, UnitStats } from '../../types';
 import { useUnitPreview } from '../../features/UnitPreview/useUnitPreview';
 import { DarkBackgroundWrapper } from '../DarkBackgroundWrapper';
@@ -18,6 +19,7 @@ import healthIcon from '../../assets/images/stats/health.png';
 import damageIcon from '../../assets/images/stats/damage.png';
 import armorIcon from '../../assets/images/stats/armor.png';
 import hourglassIcon from '../../assets/images/stats/hourglass.png';
+import { INTRO_DIALOGUE_DRYELDAR } from '@/data/story/introCinematic';
 
 interface Props {
   setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
@@ -117,11 +119,17 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
     setSelectedFaction(key);
   };
 
+  const startNewCampaign = useCampaignStore((state) => state.startNewCampaign);
+
   const handleEmbark = () => {
     playPreviewSound();
+    startNewCampaign(current.race, current.army, current.hero);
     setIsPlaying(true);
     setPlayerArmy(current.army);
     setPlayerRace(current.race);
+    if (current.race === 'dryeldar') {
+      useCampaignStore.getState().startDialogue(INTRO_DIALOGUE_DRYELDAR);
+    }
   };
 
   const handleUnitClick = (unit: UnitStats) => {
@@ -148,12 +156,6 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
 
       {/* Top Header */}
       <header className="relative z-10 w-full pt-6 pb-3 px-6 sm:px-12 flex flex-col items-center text-center">
-        <div className="flex items-center gap-3 text-pink-300 text-xs tracking-[0.3em] uppercase font-cinzel font-black mb-1 drop-shadow-[0_0_10px_rgba(244,114,182,0.8)]">
-          <span className="h-[1px] w-8 sm:w-20 bg-gradient-to-r from-transparent via-fuchsia-400 to-pink-300" />
-          <span>✦ CHOOSE YOUR CHAMPION ✦</span>
-          <span className="h-[1px] w-8 sm:w-20 bg-gradient-to-l from-transparent via-fuchsia-400 to-pink-300" />
-        </div>
-
         <h1 className="font-cinzel text-3xl sm:text-5xl lg:text-6xl font-black tracking-[0.12em] uppercase text-white drop-shadow-[0_0_20px_rgba(244,114,182,0.6)] mt-1">
           FOREST OF AN-YLTHIN
         </h1>
@@ -161,7 +163,7 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
         {/* Crystalline Divider */}
         <div className="w-full max-w-4xl flex items-center justify-center gap-4 text-pink-400/60 my-3">
           <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-fuchsia-500/40 to-pink-300/20" />
-          <span className="text-xs">✦</span>
+          <span className="text-xs text-pink-400">❖</span>
           <div className="flex-1 h-[1px] bg-gradient-to-l from-transparent via-fuchsia-500/40 to-pink-300/20" />
         </div>
       </header>
@@ -208,7 +210,7 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 font-light mt-0.5">
-                  <span className="text-emerald-300 font-semibold">Elisith</span> • Dryeldar Lady
+                  <span className="text-emerald-300 font-semibold">Elisith</span> • Shadow Lady
                 </p>
               </div>
             </div>
@@ -272,10 +274,6 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
             <span className={`absolute -bottom-1 -right-1 text-xs font-serif ${current.theme.cornerColor}`}>✦</span>
 
             <div className="flex flex-col items-center text-center">
-              <div className="text-[10.5px] uppercase tracking-[0.25em] text-pink-300 font-cinzel font-black mb-3">
-                ✦  ✦
-              </div>
-
               {/* Portrait Frame */}
               <div className="relative p-1 border-2 border-fuchsia-400/80 rounded-full bg-black shadow-[0_0_25px_rgba(244,114,182,0.5)] mb-3 group">
                 <div className="w-36 h-36 sm:w-40 sm:h-40 rounded-full overflow-hidden">
@@ -300,12 +298,6 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
                   “{current.lore}”
                 </p>
               </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-zinc-800 text-center">
-              <span className="text-[9.5px] uppercase tracking-widest text-pink-300/80 font-cinzel font-bold">
-                Faction: {current.name}
-              </span>
             </div>
           </section>
 
@@ -471,7 +463,7 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
                 </div>
                 <div className="flex items-center justify-between p-2 rounded-sm bg-black/60 border border-zinc-800">
                   <span className="text-zinc-300 flex items-center gap-1.5 text-[11px]">
-                    <span className="text-indigo-400">🔮</span> Spellpower
+                    <span className="text-indigo-400">✦</span> Spellpower
                   </span>
                   <span className="font-bold text-indigo-300">{current.hero.spellpower}</span>
                 </div>
@@ -480,7 +472,7 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
               {/* Memorized Sorceries */}
               <div className="pt-3 border-t border-fuchsia-900/60">
                 <div className="text-[10.5px] uppercase tracking-[0.2em] text-pink-300 font-cinzel font-black mb-2.5">
-                  ✦ MEMORIZED INCANTATIONS ✦
+                  MEMORIZED INCANTATIONS
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {current.hero.skills
@@ -519,7 +511,7 @@ export const HeroSelection = ({ setIsPlaying }: Props) => {
                 onClick={handleEmbark}
                 className={`w-full py-3.5 px-6 rounded-sm font-cinzel text-sm sm:text-base font-black tracking-[0.2em] uppercase bg-gradient-to-r ${current.theme.buttonGradient} border-2 hover:brightness-125 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer shadow-xl`}
               >
-                <span>◈ START ◈</span>
+                <span>EMBARK EXPEDITION</span>
               </button>
             </div>
           </section>

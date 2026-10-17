@@ -1,4 +1,5 @@
 import { Howl, Howler } from 'howler';
+import { MUSIC_TRACKS, MusicTrackKey } from '../../data/audio/musicRegistry';
 
 // Spell SFX
 import spellcurse from '../../assets/sounds/spellcurse.mp3';
@@ -12,9 +13,6 @@ import spellvampirism from '../../assets/sounds/spellvampirism.mp3';
 
 // UI SFX
 import previewclick from '../../assets/sounds/previewclick.mp3';
-
-// BGM Music Tracks
-import battletheme from '../../assets/sounds/music/battletheme.mp3';
 
 // Unit Attack SFX
 import attackroynis from '../../assets/sounds/attackroynis.mp3';
@@ -105,58 +103,97 @@ export const SOUND_SOURCES = {
 export type SoundKey = keyof typeof SOUND_SOURCES;
 
 class SoundEngine {
-  private cache: Map<SoundKey, Howl> = new Map();
-  private volume: number = 0.8;
+  private sfxCache: Map<SoundKey, Howl> = new Map();
+  private musicCache: Map<string, Howl> = new Map();
+
+  // Multi-channel Audio Volumes
+  private masterVolume: number = 0.8;
+  private musicVolume: number = 0.8;
+  private sfxVolume: number = 0.8;
   private muted: boolean = false;
+
   private listeners: Set<() => void> = new Set();
-  private bgmHowl: Howl | null = null;
-  private isBgmPlaying: boolean = false;
+
+  // Active Music State & 2-Channel Crossfader
+  private activeMusicKey: MusicTrackKey | null = null;
+  private currentMusicHowl: Howl | null = null;
+  private previousMusicHowl: Howl | null = null;
+  private fadeTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
-    // Load persisted audio settings if available
+    // Load persisted volume & mute settings
     try {
-      const savedVolume = localStorage.getItem('foa_volume');
-      if (savedVolume !== null) {
-        this.volume = parseFloat(savedVolume);
-      }
+      const savedMaster = localStorage.getItem('foa_master_volume') || localStorage.getItem('foa_volume');
+      if (savedMaster !== null) this.masterVolume = parseFloat(savedMaster);
+
+      const savedMusic = localStorage.getItem('foa_music_volume');
+      if (savedMusic !== null) this.musicVolume = parseFloat(savedMusic);
+
+      const savedSfx = localStorage.getItem('foa_sfx_volume');
+      if (savedSfx !== null) this.sfxVolume = parseFloat(savedSfx);
+
       const savedMuted = localStorage.getItem('foa_muted');
-      if (savedMuted !== null) {
-        this.muted = savedMuted === 'true';
-      }
-      Howler.volume(this.muted ? 0 : this.volume);
+      if (savedMuted !== null) this.muted = savedMuted === 'true';
+
+      Howler.volume(this.muted ? 0 : this.masterVolume);
     } catch {
-      // Fallback for SSR or restricted storage
+      // Storage fallback
+    }
+
+    // Handle browser tab visibility change
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          if (this.currentMusicHowl && this.currentMusicHowl.playing()) {
+            this.currentMusicHowl.volume(this.getEffectiveMusicVolume() * 0.2);
+          }
+        } else {
+          if (this.currentMusicHowl && this.currentMusicHowl.playing() && this.activeMusicKey) {
+            const trackDef = MUSIC_TRACKS[this.activeMusicKey] || MUSIC_TRACKS['main_menu'];
+            this.currentMusicHowl.volume(this.getEffectiveMusicVolume() * trackDef.defaultVolume);
+          }
+        }
+      });
     }
   }
 
+  // Effective Volume Calculations
+  public getEffectiveMasterVolume(): number {
+    return this.muted ? 0 : this.masterVolume;
+  }
+
+  public getEffectiveMusicVolume(): number {
+    return this.muted ? 0 : this.masterVolume * this.musicVolume;
+  }
+
+  public getEffectiveSfxVolume(): number {
+    return this.muted ? 0 : this.masterVolume * this.sfxVolume;
+  }
+
   /**
-   * Get or instantiate a cached Howl instance for low-latency playback
+   * Sound Effects (SFX) Subsystem with Web Audio API caching
    */
   private getHowl(key: SoundKey): Howl {
-    let howl = this.cache.get(key);
+    let howl = this.sfxCache.get(key);
     if (!howl) {
       const src = SOUND_SOURCES[key];
       howl = new Howl({
         src: [src],
-        html5: false, // Use Web Audio API for fast, overlapping SFX
+        html5: false, // Web Audio API for instantaneous SFX
         preload: true,
       });
-      this.cache.set(key, howl);
+      this.sfxCache.set(key, howl);
     }
     return howl;
   }
 
-  /**
-   * Play any sound by key with optional volume multiplier
-   */
   public play(key: SoundKey, volumeScale: number = 1): number | undefined {
-    if (this.muted) return undefined;
+    if (this.muted || this.masterVolume === 0 || this.sfxVolume === 0) return undefined;
     try {
       const howl = this.getHowl(key);
       const id = howl.play();
-      if (volumeScale !== 1) {
-        howl.volume(this.volume * volumeScale, id);
-      }
+      const finalVol = this.getEffectiveSfxVolume() * volumeScale;
+      howl.volume(finalVol, id);
       return id;
     } catch (err) {
       console.warn(`[SoundEngine] Could not play sound "${key}":`, err);
@@ -165,7 +202,165 @@ class SoundEngine {
   }
 
   /**
-   * Spell Action helpers
+   * Dialogue & Cutscene Voiceover Management
+   */
+  private currentVoiceHowl: Howl | null = null;
+
+  public playVoiceover(src: string, volumeScale: number = 1): number | undefined {
+    if (this.muted || this.masterVolume === 0 || this.sfxVolume === 0) return undefined;
+    try {
+      this.stopVoiceover();
+      this.currentVoiceHowl = new Howl({
+        src: [src],
+        html5: false,
+        volume: this.getEffectiveSfxVolume() * volumeScale,
+      });
+      return this.currentVoiceHowl.play();
+    } catch (err) {
+      console.warn('[SoundEngine] Could not play voiceover:', err);
+      return undefined;
+    }
+  }
+
+  public stopVoiceover() {
+    if (this.currentVoiceHowl) {
+      try {
+        this.currentVoiceHowl.stop();
+        this.currentVoiceHowl.unload();
+      } catch {}
+      this.currentVoiceHowl = null;
+    }
+  }
+
+  /**
+   * Universal Dynamic 2-Channel Crossfading Music Engine
+   * Seamlessly fades out the active track and fades in the requested track.
+   */
+  public playMusic(
+    trackKey: MusicTrackKey,
+    options?: { crossfadeMs?: number; volumeScale?: number }
+  ) {
+    if (this.activeMusicKey === trackKey && this.currentMusicHowl?.playing()) {
+      return;
+    }
+
+    const crossfade = options?.crossfadeMs ?? 1000;
+
+    try {
+      // 1. Clear any pending crossfade timeout
+      if (this.fadeTimeout) {
+        clearTimeout(this.fadeTimeout);
+        this.fadeTimeout = null;
+      }
+
+      // 2. Crossfade out the currently playing music channel
+      if (this.currentMusicHowl && this.currentMusicHowl.playing()) {
+        this.previousMusicHowl = this.currentMusicHowl;
+        const curVol = this.previousMusicHowl.volume();
+        this.previousMusicHowl.fade(curVol, 0, crossfade);
+
+        const oldHowl = this.previousMusicHowl;
+        this.fadeTimeout = setTimeout(() => {
+          oldHowl.stop();
+        }, crossfade + 50);
+      }
+
+      // 3. Retrieve or lazily instantiate target Howl
+      let targetHowl = this.musicCache.get(trackKey);
+      const trackDef = MUSIC_TRACKS[trackKey] || MUSIC_TRACKS['main_menu'];
+
+      if (!targetHowl) {
+        targetHowl = new Howl({
+          src: trackDef.src,
+          html5: true, // HTML5 audio for smooth streaming of music tracks
+          loop: trackDef.loop ?? true,
+          volume: 0,
+          preload: true,
+        });
+        this.musicCache.set(trackKey, targetHowl);
+      }
+
+      // 4. Update active track and initiate fade-in
+      this.activeMusicKey = trackKey;
+      this.currentMusicHowl = targetHowl;
+
+      const targetVolume =
+        this.getEffectiveMusicVolume() *
+        trackDef.defaultVolume *
+        (options?.volumeScale ?? 1);
+
+      if (!targetHowl.playing()) {
+        targetHowl.volume(0);
+        targetHowl.play();
+        targetHowl.fade(0, targetVolume, crossfade);
+      } else {
+        const cur = targetHowl.volume();
+        targetHowl.fade(cur, targetVolume, crossfade);
+      }
+    } catch (err) {
+      console.warn(`[SoundEngine] Could not play music "${trackKey}":`, err);
+    }
+  }
+
+  /**
+   * Stop Music with smooth fade-out
+   */
+  public stopMusic(crossfadeMs: number = 800) {
+    if (!this.currentMusicHowl || !this.currentMusicHowl.playing()) {
+      this.activeMusicKey = null;
+      return;
+    }
+
+    try {
+      if (this.fadeTimeout) {
+        clearTimeout(this.fadeTimeout);
+        this.fadeTimeout = null;
+      }
+
+      const curVol = this.currentMusicHowl.volume();
+      this.currentMusicHowl.fade(curVol, 0, crossfadeMs);
+
+      const targetHowl = this.currentMusicHowl;
+      this.fadeTimeout = setTimeout(() => {
+        targetHowl.stop();
+      }, crossfadeMs + 50);
+
+      this.activeMusicKey = null;
+      this.currentMusicHowl = null;
+    } catch (err) {
+      console.warn('[SoundEngine] Could not stop music:', err);
+    }
+  }
+
+  public getActiveMusicKey(): MusicTrackKey | null {
+    return this.activeMusicKey;
+  }
+
+  // Backward-compatible aliases
+  public startAmbientMusic(faction?: string) {
+    const key = faction === 'dryeldar' ? 'ambient_dryeldar' : 'ambient_undead';
+    this.playMusic(key);
+  }
+
+  public startBattleMusic(faction?: string) {
+    const key = faction === 'dryeldar' ? 'battle_dryeldar' : 'battle_undead';
+    this.playMusic(key);
+  }
+
+  public stopAmbientMusic() {
+    this.stopMusic();
+  }
+
+  public stopBattleMusic() {
+    this.stopMusic();
+  }
+
+  public stopAllMusic() {
+    this.stopMusic();
+  }
+
+  /**
+   * Spell & Action SFX Helpers
    */
   public playCurse() {
     this.play('spell_curse');
@@ -204,62 +399,52 @@ class SoundEngine {
   }
 
   /**
-   * Battle Background Music (BGM) Management
-   */
-  public startBattleMusic() {
-    if (this.isBgmPlaying && this.bgmHowl) return;
-    try {
-      if (!this.bgmHowl) {
-        this.bgmHowl = new Howl({
-          src: [battletheme],
-          html5: true, // HTML5 audio for smooth streaming of music tracks
-          loop: true,
-          volume: 0,
-          preload: true,
-        });
-      }
-      this.isBgmPlaying = true;
-      const targetVolume = this.muted ? 0 : this.volume * 0.45;
-      this.bgmHowl.play();
-      this.bgmHowl.fade(0, targetVolume, 1200);
-    } catch (err) {
-      console.warn('[SoundEngine] Could not start battle BGM:', err);
-    }
-  }
-
-  public stopBattleMusic() {
-    if (!this.isBgmPlaying || !this.bgmHowl) return;
-    this.isBgmPlaying = false;
-    try {
-      const currentVol = this.bgmHowl.volume();
-      this.bgmHowl.fade(currentVol, 0, 800);
-      setTimeout(() => {
-        if (!this.isBgmPlaying && this.bgmHowl) {
-          this.bgmHowl.stop();
-        }
-      }, 850);
-    } catch (err) {
-      console.warn('[SoundEngine] Could not stop battle BGM:', err);
-    }
-  }
-
-  /**
-   * Global Audio State Management
+   * Channel Volume Controls
    */
   public getVolume(): number {
-    return this.volume;
+    return this.masterVolume;
   }
 
   public setVolume(vol: number) {
-    this.volume = Math.max(0, Math.min(1, vol));
-    if (!this.muted) {
-      Howler.volume(this.volume);
-      if (this.bgmHowl && this.isBgmPlaying) {
-        this.bgmHowl.volume(this.volume * 0.45);
-      }
-    }
+    this.setMasterVolume(vol);
+  }
+
+  public getMasterVolume(): number {
+    return this.masterVolume;
+  }
+
+  public setMasterVolume(vol: number) {
+    this.masterVolume = Math.max(0, Math.min(1, vol));
+    Howler.volume(this.getEffectiveMasterVolume());
+    this.updateActiveMusicVolume();
     try {
-      localStorage.setItem('foa_volume', this.volume.toString());
+      localStorage.setItem('foa_master_volume', this.masterVolume.toString());
+      localStorage.setItem('foa_volume', this.masterVolume.toString());
+    } catch {}
+    this.notify();
+  }
+
+  public getMusicVolume(): number {
+    return this.musicVolume;
+  }
+
+  public setMusicVolume(vol: number) {
+    this.musicVolume = Math.max(0, Math.min(1, vol));
+    this.updateActiveMusicVolume();
+    try {
+      localStorage.setItem('foa_music_volume', this.musicVolume.toString());
+    } catch {}
+    this.notify();
+  }
+
+  public getSfxVolume(): number {
+    return this.sfxVolume;
+  }
+
+  public setSfxVolume(vol: number) {
+    this.sfxVolume = Math.max(0, Math.min(1, vol));
+    try {
+      localStorage.setItem('foa_sfx_volume', this.sfxVolume.toString());
     } catch {}
     this.notify();
   }
@@ -271,12 +456,7 @@ class SoundEngine {
   public setMuted(muted: boolean) {
     this.muted = muted;
     Howler.mute(muted);
-    if (this.bgmHowl) {
-      this.bgmHowl.mute(muted);
-      if (!muted && this.isBgmPlaying) {
-        this.bgmHowl.volume(this.volume * 0.45);
-      }
-    }
+    this.updateActiveMusicVolume();
     try {
       localStorage.setItem('foa_muted', muted.toString());
     } catch {}
@@ -285,6 +465,14 @@ class SoundEngine {
 
   public toggleMute() {
     this.setMuted(!this.muted);
+  }
+
+  private updateActiveMusicVolume() {
+    if (this.currentMusicHowl && this.currentMusicHowl.playing() && this.activeMusicKey) {
+      const trackDef = MUSIC_TRACKS[this.activeMusicKey] || MUSIC_TRACKS['main_menu'];
+      const target = this.getEffectiveMusicVolume() * trackDef.defaultVolume;
+      this.currentMusicHowl.volume(target);
+    }
   }
 
   public subscribe(listener: () => void): () => void {
@@ -297,5 +485,4 @@ class SoundEngine {
   }
 }
 
-// Global Singleton Instance
 export const soundEngine = new SoundEngine();

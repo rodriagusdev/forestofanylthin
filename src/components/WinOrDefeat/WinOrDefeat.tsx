@@ -57,7 +57,7 @@ const WinOrDefeat = ({ text }: Props) => {
               : 'bg-rose-950/90 border-rose-500 text-rose-200 shadow-[0_0_20px_rgba(244,63,94,0.8)]'
           }`}
         >
-          {isVictory ? '✦ DOMAIN LIBERATED ✦' : '☠ CAMPAIGN COLLAPSE ☠'}
+          {isVictory ? 'DOMAIN LIBERATED' : 'CAMPAIGN COLLAPSED'}
         </span>
       </div>
 
@@ -88,7 +88,7 @@ const WinOrDefeat = ({ text }: Props) => {
               : 'bg-gradient-to-r from-rose-950 via-rose-800 to-rose-950 border-2 border-rose-500 text-rose-100 hover:text-white hover:border-rose-400 hover:shadow-[0_0_30px_rgba(244,63,94,0.9)]'
           }`}
         >
-          {isVictory ? '✦ Begin New Expedition ✦' : '☠ Reclaim Fallen Honor ☠'}
+          {isVictory ? 'BEGIN NEW EXPEDITION' : 'RECLAIM FALLEN HONOR'}
         </button>
       </div>
     </div>

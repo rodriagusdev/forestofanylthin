@@ -8,8 +8,10 @@ import nicolaiPortrait from "../../../assets/images/portraits/undead/nicolai.jpg
 import nicolaiFace from "../../../assets/images/portraits/undead/nicolaiface.jpg";
 import lorgrenPortrait from "../../../assets/images/portraits/undead/lorgren.jpg";
 import lorgrenFace from "../../../assets/images/portraits/undead/lorgrenface.jpg";
-import velishPortrait from "../../../assets/images/portraits/undead/velishacarys.webp";
+import velishPortrait from "../../../assets/images/portraits/undead/velishacarys.jpg";
 import velishFace from "../../../assets/images/portraits/undead/velishacarysface.jpg";
+import eldarePortrait from "../../../assets/images/portraits/undead/eldare.jpg";
+import eldareFace from "../../../assets/images/portraits/undead/eldareface.jpg";
 import { curse, weakness } from "../../Skills/DarkMagic";
 import { attack, clear } from "../../Skills/Combat";
 import { reanimate, vampiricLust } from "../../Skills/Necromancy";
@@ -86,13 +88,41 @@ export const lorgrenMalkur = {
   vampiricHeal: false,
 };
 
+export const eldare = {
+  name: "Dark Knight Eldare",
+  id: "Dark Knight Eldare",
+  type: "Hero",
+  damage: 55,
+  initialArmor: 5,
+  armor: 5,
+  magicResistance: 0,
+  health: 240,
+  maxHealth: 240,
+  magic: 6,
+  maxMagic: 6,
+  initiative: "7",
+  spellpower: 4,
+  portrait: eldarePortrait,
+  face: eldareFace,
+  stack: 1,
+  maxStack: 1,
+  belongsTo: "",
+  skills: [clear, attack, vampiricLust],
+  weaknessDamage: 1,
+  cursed: false,
+  vampiricHeal: false,
+  soundAttack: attackVelish,
+  soundHitted: hittedVelish,
+  soundDeath: deathVelish,
+};
+
 export const velishAcarys = {
   name: "Velish Acarys",
   id: "Velish Acarys",
   type: "Hero",
   damage: 62,
-  initialArmor: 2,
-  armor: 2,
+  initialArmor: 1,
+  armor: 1,
   magicResistance: 0,
   health: 175,
   maxHealth: 175,

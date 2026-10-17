@@ -110,10 +110,23 @@ describe('Damage Calculations', () => {
       expect(calculateRainOfFirePower(hero)).toBe(55); // 30 + (5 * 5)
     });
 
-    it('calculates Ice Spear with breached magic resistance', () => {
+    it('calculates Ice Spear with breached magic resistance (default base)', () => {
       const target = mockUnit({ magicResistance: -4 });
       // 95 * (1 - (-4)/10) = 95 * 1.4 = 133
       expect(calculateIceSpearDamage(target)).toBe(133);
+    });
+
+    it('calculates Ice Spear scaling with hero spellpower', () => {
+      const hero = mockUnit({ type: 'Hero', spellpower: 5 });
+      const target = mockUnit({ magicResistance: 0 });
+      // (95 + 8 * 5) * 1.0 = 135
+      expect(calculateIceSpearDamage(target, hero)).toBe(135);
+
+      // With equipped ring (+2 SP = 7 total) and breached resistance (-4)
+      const empoweredHero = mockUnit({ type: 'Hero', spellpower: 7 });
+      const breachedTarget = mockUnit({ magicResistance: -4 });
+      // (95 + 8 * 7) * 1.4 = 151 * 1.4 = 211.4 -> 211
+      expect(calculateIceSpearDamage(breachedTarget, empoweredHero)).toBe(211);
     });
   });
 

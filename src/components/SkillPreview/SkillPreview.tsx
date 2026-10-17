@@ -59,7 +59,7 @@ const SkillPreview = ({ previewSkill, handleExitSkillPreview }: Props) => {
         <span
           className={`px-3 py-0.5 rounded-sm bg-black/80 border ${badgeBorder} text-[10px] font-cinzel font-black tracking-widest uppercase shadow-md`}
         >
-          ✦ {previewSkill.schoolTier || previewSkill.type || 'Incantation'} ✦
+          {previewSkill.schoolTier || previewSkill.type || 'Incantation'}
         </span>
       </div>
 
@@ -79,11 +79,11 @@ const SkillPreview = ({ previewSkill, handleExitSkillPreview }: Props) => {
       <div className="flex items-center gap-2 my-2">
         {previewSkill.targetType && (
           <span className="px-2 py-0.5 bg-black/70 border border-zinc-700 text-zinc-300 text-[10px] font-mono rounded-xs">
-            🎯 {previewSkill.targetType}
+            {previewSkill.targetType}
           </span>
         )}
         <span className="px-2 py-0.5 bg-black/70 border border-zinc-700 text-amber-300 text-[10px] font-mono font-bold rounded-xs">
-          💧 {previewSkill.manaCost !== undefined && previewSkill.manaCost > 0 ? `${previewSkill.manaCost} Mana` : '0 Mana'}
+          {previewSkill.manaCost !== undefined && previewSkill.manaCost > 0 ? `${previewSkill.manaCost} Mana` : '0 Mana'}
         </span>
       </div>
 
@@ -121,7 +121,7 @@ const SkillPreview = ({ previewSkill, handleExitSkillPreview }: Props) => {
         onClick={handleExitSkillPreview}
         className="mt-3 w-full px-6 py-2 rounded-sm bg-black/80 hover:bg-zinc-900 border border-zinc-600 hover:border-zinc-400 text-zinc-200 hover:text-white font-cinzel font-bold text-xs tracking-widest uppercase transition-all shadow-md"
       >
-        ✕ Close Codex
+        DISMISS
       </button>
     </div>
   );

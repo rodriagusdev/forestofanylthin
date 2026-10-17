@@ -14,7 +14,7 @@ const ZonePreview = ({ previewLevel, handleVisibility }: Props) => {
 
   return (
     <>
-      <DarkBackgroundWrapper onClose={handleVisibility}>
+      <DarkBackgroundWrapper zIndex={100050} onClose={handleVisibility}>
         <div
           onClick={(e) => e.stopPropagation()}
           className="relative flex flex-col items-center w-[95%] max-w-lg p-5 sm:p-7 rounded-sm border-2 border-rose-600 bg-gradient-to-b from-[#25060e]/95 via-[#130307]/95 to-[#080103]/95 shadow-[0_0_55px_rgba(225,29,72,0.6),inset_0_0_35px_rgba(159,18,57,0.45)] ring-1 ring-rose-500/50 backdrop-blur-2xl text-zinc-100 select-none animate-in fade-in zoom-in-95 duration-200 z-40"
@@ -36,12 +36,12 @@ const ZonePreview = ({ previewLevel, handleVisibility }: Props) => {
           {/* Header Banner */}
           <div className="flex items-center justify-center mb-3">
             <span className="px-3.5 py-0.5 rounded-sm bg-rose-950/90 border border-rose-500 text-rose-200 text-[10px] font-cinzel font-black tracking-[0.2em] uppercase shadow-[0_0_15px_rgba(244,63,94,0.7)]">
-              ⚔ HOSTILE TERRITORY RECONNAISSANCE ⚔
+              SCOUTED FORCES
             </span>
           </div>
 
           <h2 className="font-cinzel text-base sm:text-lg font-black text-white uppercase tracking-wider mb-4 text-center">
-            Enemy Divisions In Domain
+            Enemy Divisions
           </h2>
 
           {/* Enemy Divisions Grid */}
@@ -82,14 +82,14 @@ const ZonePreview = ({ previewLevel, handleVisibility }: Props) => {
               onClick={handleVisibility}
               className="w-full sm:w-auto px-8 py-2 rounded-sm bg-gradient-to-r from-rose-950 via-rose-900 to-rose-950 border border-rose-500 text-rose-200 hover:text-white hover:border-rose-400 hover:shadow-[0_0_20px_rgba(244,63,94,0.8)] font-cinzel font-black text-xs tracking-widest uppercase transition-all shadow-lg"
             >
-              ✕ Close Recon
+              DISMISS
             </button>
           </div>
         </div>
       </DarkBackgroundWrapper>
 
       {previewUnit !== undefined && (
-        <DarkBackgroundWrapper onClose={handleExitUnitPreview}>
+        <DarkBackgroundWrapper zIndex={100100} onClose={handleExitUnitPreview}>
           <UnitPreview
             handleExitUnitPreview={handleExitUnitPreview}
             previewUnit={previewUnit}
