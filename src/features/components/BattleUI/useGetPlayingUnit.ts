@@ -1,5 +1,5 @@
 import { useContext, useEffect } from 'react';
-import { BattleContext } from '../../../../context/BattleContext';
+import { BattleContext } from '../../../context/BattleContext';
 import { useBattle } from './useBattle';
 
 export const useGetPlayingUnit = () => {

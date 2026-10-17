@@ -24,10 +24,11 @@ export const iceSpear: Skill = {
   name: 'Destruction: Ice Spear',
   formattedName: 'Ice Spear',
   description:
-    'Conjures an armor-piercing spear of glacial frost. Deals 95 base damage, scaling with target magic vulnerability (up to 133 DMG if Breached).',
+    'Conjures an armor-piercing spear of glacial frost. Deals massive single-target magic damage scaling with Hero Spellpower and amplified by target magic vulnerability.',
   mechanics:
-    'Impales a single enemy stack with hyper-compressed glacial frost. Ignores physical armor and amplifies if target magic resistance was breached.',
-  formula: 'Damage = 95 × (1 - Magic Resistance / 10)',
+    'Impales a single enemy stack with hyper-compressed glacial frost. Scales with Spellpower, ignores physical armor, and amplifies if target magic resistance was breached.',
+  formula:
+    'Hero: (95 + 8 × Spellpower) × (1 - Magic Resistance / 10)\nCreature: (40 + 5 × Stack + 5 × Level) × (1 - Magic Resistance / 10)',
   quote: '“Colder than the grave, swifter than the final winter breath.”',
   schoolTier: 'Destruction Magic • Circle III Evocation',
   targetType: 'Single Enemy',

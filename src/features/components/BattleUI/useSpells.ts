@@ -1,6 +1,6 @@
 import { useContext } from 'react';
-import { BattleContext } from '../../../../context/BattleContext';
-import { Unit } from '../../../../types';
+import { BattleContext } from '../../../context/BattleContext';
+import { Unit } from '../../../types';
 import {
   calculatePhysicalAttack,
   calculateShatterArmorPower,
@@ -9,7 +9,7 @@ import {
   calculateIceSpearDamage,
   calculateRetaliationStrike,
   applyVampiricHeal,
-} from '../../../../helpers/combat/damageCalculations';
+} from '../../../helpers/combat/damageCalculations';
 
 export interface CombatActionResult {
   updatedCaster: Unit;
@@ -311,7 +311,7 @@ export const useSpells = () => {
   };
 
   const castIceSpear = (castingUnit: Unit, targetUnit: Unit): CombatActionResult => {
-    const damage = calculateIceSpearDamage(targetUnit);
+    const damage = calculateIceSpearDamage(targetUnit, castingUnit);
     const stacksLost = Math.floor(damage / targetUnit.health);
     const weaknessMultiplier = targetUnit.weaknessDamage ?? 1;
 

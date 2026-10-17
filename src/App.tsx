@@ -1,27 +1,45 @@
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, lazy, Suspense } from 'react';
 import { BattleContext } from './context/BattleContext';
 import { useBattleHandler, useZonePreview } from './features/components/App';
-import { BattleUI } from './components/BattleUI/-BattleUI';
 import { PlayerUI } from './components/PlayerUI';
 import { DarkBackgroundWrapper } from './components/DarkBackgroundWrapper';
-import { HeroSelection } from './components/HeroSelection';
-import { WinOrDefeat } from './components/WinOrDefeat';
-import { ZonePreview } from './components/ZonePreview';
-import { Map } from './components/Map';
 import { AudioControl } from './components/AudioControl';
 import { soundEngine } from './services/audio/soundEngine';
+import { resolveMusicTrack } from './data/audio/musicRegistry';
+import { findLocation } from './data/levels/levelsData';
 import './App.css';
 
+// Lazy-loaded routes & modal components for optimized initial bundle splitting
+const BattleUI = lazy(() =>
+  import('./components/BattleUI').then((m) => ({ default: m.BattleUI }))
+);
+const HeroSelection = lazy(() =>
+  import('./components/HeroSelection').then((m) => ({ default: m.HeroSelection }))
+);
+const Map = lazy(() =>
+  import('./components/Map').then((m) => ({ default: m.Map }))
+);
+const ZonePreview = lazy(() =>
+  import('./components/ZonePreview').then((m) => ({ default: m.ZonePreview }))
+);
+const DialogueModal = lazy(() =>
+  import('./components/Dialogue/DialogueModal').then((m) => ({ default: m.DialogueModal }))
+);
+const InventoryModal = lazy(() =>
+  import('./components/Inventory').then((m) => ({ default: m.InventoryModal }))
+);
+const WinOrDefeat = lazy(() =>
+  import('./components/WinOrDefeat').then((m) => ({ default: m.WinOrDefeat }))
+);
+
 function App() {
-  const { playerRace, isInFight, playerArmy } = useContext(BattleContext);
+  const { playerRace, isInFight, playerArmy, currentZone } = useContext(BattleContext);
 
   const {
-    isCemeteryCompleted,
-    isGloomyForestCompleted,
-    isLostGladeCompleted,
-    isSacreCompleted,
+    currentLevel,
+    completedLocationIds,
+    isCampaignWon,
     handleInFight,
-    levelsCompleted,
     isPlaying,
     setIsPlaying,
   } = useBattleHandler();
@@ -29,60 +47,96 @@ function App() {
   const { previewLevelInfo, isVisible, handleVisibility, handlePreviewLevel } =
     useZonePreview();
 
-  // Dynamic Adaptive Battle Music: ONLY active during tactical combat engagements
+  // Dynamic Multi-Faction & Zone-Aware Adaptive Music
   useEffect(() => {
-    if (isInFight && playerArmy.length > 0 && levelsCompleted < 4) {
-      soundEngine.startBattleMusic();
+    const locConfig = currentZone ? findLocation(currentZone)?.location : null;
+    const targetTrack = resolveMusicTrack({
+      isInFight,
+      playerRace,
+      locationConfig: locConfig,
+      isCampaignWon,
+      isPlaying,
+      playerArmyCount: playerArmy.length,
+    });
+
+    if (targetTrack) {
+      soundEngine.playMusic(targetTrack);
     } else {
-      soundEngine.stopBattleMusic();
+      soundEngine.stopMusic();
     }
-    return () => {
-      soundEngine.stopBattleMusic();
+  }, [isInFight, playerRace, currentZone, isCampaignWon, isPlaying, playerArmy.length]);
+
+  // Unlock audio on initial user gesture if browser blocked autoplay
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (!isInFight && !isCampaignWon) {
+        const targetTrack = resolveMusicTrack({
+          isInFight: false,
+          playerRace,
+          isPlaying,
+          playerArmyCount: playerArmy.length,
+        });
+        if (targetTrack) {
+          soundEngine.playMusic(targetTrack);
+        }
+      }
     };
-  }, [isInFight, playerArmy.length, levelsCompleted]);
+
+    window.addEventListener('pointerdown', handleFirstInteraction, { once: true });
+    window.addEventListener('keydown', handleFirstInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, [playerRace, isPlaying, playerArmy.length]);
 
   return (
     <div className="bg-gradient-radial from-zinc-900 via-gray-800/20 to-zinc-900 w-screen min-h-screen">
       <AudioControl />
-      {playerArmy.length < 1 && !isPlaying && (
+
+      <Suspense fallback={null}>
+        <DialogueModal />
+        <InventoryModal />
+
+        {playerArmy.length < 1 && !isPlaying && (
           <HeroSelection setIsPlaying={setIsPlaying} />
-      )}
+        )}
 
-      {playerArmy.length == 0 && isPlaying && (
-        <DarkBackgroundWrapper opacity={1}>
-          <WinOrDefeat text={'YOU HAVE LOST!'} />
-        </DarkBackgroundWrapper>
-      )}
+        {playerArmy.length === 0 && isPlaying && (
+          <DarkBackgroundWrapper opacity={1}>
+            <WinOrDefeat text={'YOU HAVE LOST!'} />
+          </DarkBackgroundWrapper>
+        )}
 
-      {levelsCompleted == 4 && (
-        <DarkBackgroundWrapper opacity={1}>
-          <WinOrDefeat text={'YOU HAVE WON!'} />
-        </DarkBackgroundWrapper>
-      )}
+        {isCampaignWon && (
+          <DarkBackgroundWrapper opacity={1}>
+            <WinOrDefeat text={'YOU HAVE WON!'} />
+          </DarkBackgroundWrapper>
+        )}
 
-      {isVisible && previewLevelInfo && (
-        <ZonePreview
-          handleVisibility={handleVisibility}
-          previewLevel={previewLevelInfo}
-        />
-      )}
+        {!isInFight && playerRace !== '' && playerArmy.length > 0 && (
+          <PlayerUI race={playerRace} playerArmy={playerArmy} />
+        )}
 
-      {!isInFight && playerRace != '' && playerArmy.length > 0 && (
-        <PlayerUI race={playerRace} playerArmy={playerArmy} />
-      )}
+        {!isInFight && playerArmy.length > 0 && (
+          <Map
+            currentLevel={currentLevel}
+            completedLocationIds={completedLocationIds}
+            handleInFight={handleInFight}
+            handlePreviewLevel={handlePreviewLevel}
+          />
+        )}
 
-      {!isInFight && playerArmy.length > 0 && (
-        <Map
-          isCemeteryCompleted={isCemeteryCompleted}
-          isGloomyForestCompleted={isGloomyForestCompleted}
-          isLostGladeCompleted={isLostGladeCompleted}
-          isSacreCompleted={isSacreCompleted}
-          handleInFight={handleInFight}
-          handlePreviewLevel={handlePreviewLevel}
-        />
-      )}
+        {isVisible && previewLevelInfo && (
+          <ZonePreview
+            handleVisibility={handleVisibility}
+            previewLevel={previewLevelInfo}
+          />
+        )}
 
-      {isInFight && <BattleUI />}
+        {isInFight && <BattleUI />}
+      </Suspense>
     </div>
   );
 }

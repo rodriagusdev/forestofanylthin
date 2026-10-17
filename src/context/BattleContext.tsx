@@ -1,14 +1,14 @@
-import { createContext, useState, useCallback } from 'react';
+import { createContext, useState, useCallback, ReactNode } from 'react';
 import { Skill, Unit, Army, ActionName, CombatLogEntry, FloatingCombatTextEvent } from '../types';
 import { useActionSound } from '../hooks/useActionSound';
 
 interface ProviderProps {
-  children: JSX.Element;
+  children: ReactNode;
 }
 
-interface BattleContextProps {
-  heroStats: Unit;
-  setHeroStats: React.Dispatch<React.SetStateAction<Unit>>;
+export interface BattleContextProps {
+  heroStats: Unit | null;
+  setHeroStats: React.Dispatch<React.SetStateAction<Unit | null>>;
   playerRace: string;
   setPlayerRace: React.Dispatch<React.SetStateAction<string>>;
   turn: string;
@@ -25,18 +25,18 @@ interface BattleContextProps {
   setUnitPosition: React.Dispatch<React.SetStateAction<number>>;
   isInFight: boolean;
   setIsInFight: React.Dispatch<React.SetStateAction<boolean>>;
-  playingUnit: Unit;
-  setPlayingUnit: React.Dispatch<React.SetStateAction<Unit>>;
-  targetUnit: Unit;
-  setTargetUnit: React.Dispatch<React.SetStateAction<Unit>>;
-  deadUnit: Unit;
-  setDeadUnit: React.Dispatch<React.SetStateAction<Unit>>;
+  playingUnit: Unit | null;
+  setPlayingUnit: React.Dispatch<React.SetStateAction<Unit | null>>;
+  targetUnit: Unit | null;
+  setTargetUnit: React.Dispatch<React.SetStateAction<Unit | null>>;
+  deadUnit: Unit | null;
+  setDeadUnit: React.Dispatch<React.SetStateAction<Unit | null>>;
   showBattleMessage: boolean;
   setShowBattleMessage: React.Dispatch<React.SetStateAction<boolean>>;
   battleMessageText: string;
   setBattleMessageText: React.Dispatch<React.SetStateAction<string>>;
-  actionImage: Skill;
-  setActionImage: React.Dispatch<React.SetStateAction<Skill>>;
+  actionImage: Skill | null;
+  setActionImage: React.Dispatch<React.SetStateAction<Skill | null>>;
   addedDryexaRanger: boolean;
   setAddedDryexaRanger: React.Dispatch<React.SetStateAction<boolean>>;
   addedSkeletons: boolean;
@@ -55,8 +55,8 @@ interface BattleContextProps {
   clearCombatLogs: () => void;
   fallenAllies: Unit[];
   setFallenAllies: React.Dispatch<React.SetStateAction<Unit[]>>;
-  previewUnit: Unit | undefined;
-  setPreviewUnit: React.Dispatch<React.SetStateAction<Unit | undefined>>;
+  previewUnit: Unit | null;
+  setPreviewUnit: React.Dispatch<React.SetStateAction<Unit | null>>;
   handleUnitPreview: (unit: Unit) => void;
   handleExitUnitPreview: () => void;
   hoveredUnitId: string | null;
@@ -73,13 +73,13 @@ export const BattleContext = createContext({} as BattleContextProps);
 
 export const BattleContextProvider = ({ children }: ProviderProps) => {
   const { playPreviewSound } = useActionSound();
-  const [heroStats, setHeroStats] = useState<Unit>({} as Unit);
+  const [heroStats, setHeroStats] = useState<Unit | null>(null);
   const [playerRace, setPlayerRace] = useState('');
 
   const [playerArmy, setPlayerArmy] = useState<Army>([]);
   const [enemyArmy, setEnemyArmy] = useState<Army>([]);
 
-  const [previewUnit, setPreviewUnit] = useState<Unit | undefined>();
+  const [previewUnit, setPreviewUnit] = useState<Unit | null>(null);
   const [hoveredUnitId, setHoveredUnitId] = useState<string | null>(null);
   const [activeScreenShake, setActiveScreenShake] = useState<boolean | 'light' | 'heavy' | 'apocalyptic'>(false);
   const [activeScreenFlash, setActiveScreenFlash] = useState<'ruby' | 'fire' | 'ice' | 'arcane' | 'emerald' | 'dark-magic' | 'curse' | null>(null);
@@ -94,7 +94,6 @@ export const BattleContextProvider = ({ children }: ProviderProps) => {
     }, 1800);
   }, []);
 
-
   const handleUnitPreview = useCallback(
     (unit: Unit) => {
       playPreviewSound();
@@ -104,8 +103,9 @@ export const BattleContextProvider = ({ children }: ProviderProps) => {
   );
 
   const handleExitUnitPreview = useCallback(() => {
-    setPreviewUnit(undefined);
+    setPreviewUnit(null);
   }, []);
+
   const [addedDryexaRanger, setAddedDryexaRanger] = useState(false);
   const [addedSkeletons, setAddedSkeletons] = useState(false);
 
@@ -115,11 +115,11 @@ export const BattleContextProvider = ({ children }: ProviderProps) => {
   const [isInFight, setIsInFight] = useState<boolean>(false);
   const [action, setAction] = useState<ActionName>('Combat: Clear Action');
   const [turn, setTurn] = useState('');
-  const [playingUnit, setPlayingUnit] = useState<Unit>({} as Unit);
-  const [targetUnit, setTargetUnit] = useState<Unit>({} as Unit);
-  const [deadUnit, setDeadUnit] = useState<Unit>({} as Unit);
+  const [playingUnit, setPlayingUnit] = useState<Unit | null>(null);
+  const [targetUnit, setTargetUnit] = useState<Unit | null>(null);
+  const [deadUnit, setDeadUnit] = useState<Unit | null>(null);
 
-  const [actionImage, setActionImage] = useState<Skill>({} as Skill);
+  const [actionImage, setActionImage] = useState<Skill | null>(null);
   const [battleMessageText, setBattleMessageText] = useState('');
   const [showBattleMessage, setShowBattleMessage] = useState(false);
   const [isDamaging, setIsDamaging] = useState(false);

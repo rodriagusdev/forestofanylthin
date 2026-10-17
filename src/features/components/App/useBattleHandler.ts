@@ -1,29 +1,17 @@
 import { useContext, useEffect, useState } from 'react';
 import { BattleContext } from '../../../context/BattleContext';
-import { dryexaRanger } from '../../../data/unitstats/dryexa/dryexa';
-import { skeleton } from '../../../data/unitstats/undead/undead';
-import { ZONES, ZoneId } from '../../../data/zones/zones';
+import { useCampaignStore } from '../../../store/useCampaignStore';
+import {
+  LEVELS,
+  TOTAL_LEVELS,
+  getLevelById,
+  findLocation,
+} from '../../../data/levels/levelsData';
+import { restoreArmy } from '../../../helpers/campaign/campaignProgression';
 import { Army } from '../../../types';
-
-const restoreArmy = (army: Army): Army => {
-  return army.map((unit) => ({
-    ...unit,
-    stack: Math.ceil(unit.stack),
-    maxStack: Math.ceil(unit.stack),
-    updatedHealth: unit.health * Math.ceil(unit.stack),
-    maxHealth: unit.health * Math.ceil(unit.stack),
-    updatedDamage: unit.damage * Math.ceil(unit.stack),
-    magic: unit.maxMagic,
-    maxMagic: unit.maxMagic,
-    cursed: false,
-    vampiricHeal: false,
-    weaknessDamage: 1,
-  }));
-};
 
 export const useBattleHandler = () => {
   const {
-    playerRace,
     isInFight,
     setIsInFight,
     setEnemyArmy,
@@ -32,47 +20,55 @@ export const useBattleHandler = () => {
     setPlayerArmy,
     setUnitsInBoard,
     enemyArmy,
-    setAddedDryexaRanger,
-    setAddedSkeletons,
     setCurrentZone,
     setCurrentZoneImage,
     setFallenAllies,
+    setPlayerRace,
   } = useContext(BattleContext);
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [levelsCompleted, setLevelsCompleted] = useState(0);
+  // Zustand Campaign Store Selectors & Actions
+  const isPlaying = useCampaignStore((state) => state.isPlaying);
+  const isCampaignWon = useCampaignStore((state) => state.isCampaignWon);
+  const currentLevelId = useCampaignStore((state) => state.currentLevelId);
+  const completedLocationsByLevel = useCampaignStore(
+    (state) => state.completedLocationsByLevel
+  );
+  const levelsCompleted = useCampaignStore((state) => state.levelsCompleted);
+  const campaignPlayerArmy = useCampaignStore((state) => state.playerArmy);
+  const campaignPlayerRace = useCampaignStore((state) => state.playerRace);
+  const completeLocation = useCampaignStore((state) => state.completeLocation);
+  const resetCampaign = useCampaignStore((state) => state.resetCampaign);
 
-  const [activeZone, setActiveZone] = useState<ZoneId | null>(null);
+  const [activeLocationId, setActiveLocationId] = useState<string | null>(null);
 
-  const [isCemeteryCompleted, setIsCemeteryCompleted] = useState(false);
-  const [isGloomyForestCompleted, setIsGloomyForestCompleted] = useState(false);
-  const [isLostGladeCompleted, setIsLostGladeCompleted] = useState(false);
-  const [isSacreCompleted, setIsSacreCompleted] = useState(false);
+  const currentLevel = getLevelById(currentLevelId) || LEVELS[0];
+  const completedLocationIds = completedLocationsByLevel[currentLevelId] || [];
 
-  const handleInFight = async (enemiesToAdd: Army, level?: string) => {
-    const zoneKey = (level as ZoneId) || 'Cemetery';
-    if (ZONES[zoneKey]) {
-      setCurrentZone(zoneKey);
-      setCurrentZoneImage(ZONES[zoneKey].image);
+  // Sync campaign player race & army to BattleContext when outside combat
+  useEffect(() => {
+    if (campaignPlayerRace) {
+      setPlayerRace(campaignPlayerRace);
+    }
+    if (!isInFight && campaignPlayerArmy && campaignPlayerArmy.length > 0) {
+      setPlayerArmy(campaignPlayerArmy);
+    }
+  }, [campaignPlayerRace, campaignPlayerArmy, isInFight, setPlayerArmy, setPlayerRace]);
+
+  const handleInFight = async (enemiesToAdd: Army, locationId?: string) => {
+    const locId = locationId || currentLevel.locations[0]?.id || 'Cemetery';
+    const locationData = findLocation(locId)?.location;
+
+    if (locationData) {
+      setCurrentZone(locationData.name);
+      setCurrentZoneImage(locationData.image);
     }
 
-    setActiveZone(zoneKey);
-
-    switch (zoneKey) {
-      case 'Cemetery':
-        setIsCemeteryCompleted(true);
-        break;
-      case 'Gloomy Forest':
-        setIsGloomyForestCompleted(true);
-        break;
-      case 'Lost Glade':
-        setIsLostGladeCompleted(true);
-        break;
-      case 'Sacrelthar':
-        setIsSacreCompleted(true);
-        break;
+    // Always synchronize playerArmy from latest Zustand campaign state (equipped gear + stats)
+    if (campaignPlayerArmy && campaignPlayerArmy.length > 0) {
+      setPlayerArmy(restoreArmy(campaignPlayerArmy));
     }
 
+    setActiveLocationId(locId);
     setIsInFight(true);
     setEnemyArmy([...enemiesToAdd]);
     setFallenAllies([]);
@@ -95,75 +91,68 @@ export const useBattleHandler = () => {
       setIsInFight(false);
       setUnitsInBoard([]);
       setUnitPosition(0);
-      setLevelsCompleted((prev) => prev + 1);
 
-      let updatedArmy = restoreArmy(playerArmy);
+      const survivingArmy = restoreArmy(playerArmy);
 
-      if (activeZone === 'Cemetery' && playerRace === 'undead') {
-        const hasSkeletons = updatedArmy.some((u) => u.id === 'nicolaiSkeleton');
-        if (hasSkeletons) {
-          updatedArmy = updatedArmy.map((unit) => {
-            if (unit.id === 'nicolaiSkeleton') {
-              const newStack = unit.stack + 50;
-              return {
-                ...unit,
-                stack: newStack,
-                maxStack: unit.maxStack + 50,
-                updatedHealth: unit.updatedHealth + unit.health * 50,
-                maxHealth: unit.health * newStack,
-                updatedDamage: unit.updatedDamage + unit.damage * 50,
-              };
-            }
-            return unit;
-          });
-        } else {
-          updatedArmy = [
-            ...updatedArmy,
-            {
-              ...skeleton,
-              stack: 50,
-              maxStack: 50,
-              maxHealth: skeleton.health * (skeleton.stack + 50),
-              updatedDamage: skeleton.damage * 50,
-              updatedHealth: skeleton.health * 50,
-              belongsTo: 'player',
-            },
-          ];
-        }
-        setAddedSkeletons(true);
-      } else if (activeZone === 'Gloomy Forest') {
-        updatedArmy = [
-          ...updatedArmy,
-          {
-            ...dryexaRanger,
-            stack: 14,
-            maxStack: 14,
-            maxHealth: dryexaRanger.health * (dryexaRanger.stack + 14),
-            updatedDamage: dryexaRanger.damage * 14,
-            updatedHealth: dryexaRanger.health * 14,
-            belongsTo: 'player',
-          },
-        ];
-        setAddedDryexaRanger(true);
+      if (activeLocationId) {
+        const locInfo = findLocation(activeLocationId)?.location;
+        // Commit victory, update persistent army & grant rewards in Zustand
+        completeLocation(
+          currentLevelId,
+          activeLocationId,
+          survivingArmy,
+          locInfo?.reward
+        );
       }
 
-      setPlayerArmy(updatedArmy);
-      setActiveZone(null);
+      setPlayerArmy(survivingArmy);
+      setActiveLocationId(null);
     }
-  }, [enemyArmy.length, playerArmy.length, isInFight, isPlaying]);
+  }, [
+    enemyArmy.length,
+    playerArmy.length,
+    isInFight,
+    isPlaying,
+    activeLocationId,
+    currentLevelId,
+    completeLocation,
+    setPlayerArmy,
+    setIsInFight,
+    setUnitsInBoard,
+    setUnitPosition,
+  ]);
 
   return {
-    isInCemetery: activeZone === 'Cemetery',
-    isInGloomyForest: activeZone === 'Gloomy Forest',
-    isInLostGlade: activeZone === 'Lost Glade',
-    isInSacre: activeZone === 'Sacrelthar',
-    isCemeteryCompleted,
-    isGloomyForestCompleted,
-    isLostGladeCompleted,
-    isSacreCompleted,
-    isPlaying,
-    setIsPlaying,
+    currentLevel,
+    currentLevelId,
+    completedLocationIds,
+    isLocationCompleted: (locId: string) => completedLocationIds.includes(locId),
+    isCampaignWon,
     levelsCompleted,
+    isPlaying,
+    setIsPlaying: (playingOrUpdater: React.SetStateAction<boolean>) => {
+      const current = useCampaignStore.getState().isPlaying;
+      const next =
+        typeof playingOrUpdater === 'function'
+          ? (playingOrUpdater as (prev: boolean) => boolean)(current)
+          : playingOrUpdater;
+      if (!next) {
+        resetCampaign();
+      } else {
+        useCampaignStore.setState({ isPlaying: true });
+      }
+    },
     handleInFight,
+    totalLevels: TOTAL_LEVELS,
+
+    // Backward-compatibility props:
+    isCemeteryCompleted: completedLocationIds.includes('Cemetery'),
+    isGloomyForestCompleted: completedLocationIds.includes('Gloomy Forest'),
+    isLostGladeCompleted: completedLocationIds.includes('Lost Glade'),
+    isSacreCompleted: completedLocationIds.includes('Sacrelthar'),
+    isInCemetery: activeLocationId === 'Cemetery',
+    isInGloomyForest: activeLocationId === 'Gloomy Forest',
+    isInLostGlade: activeLocationId === 'Lost Glade',
+    isInSacre: activeLocationId === 'Sacrelthar',
   };
 };

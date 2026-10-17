@@ -14,9 +14,11 @@
   },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@types/howler": "^2.2.12",
     "@types/node": "^22.13.9",
     "@types/react": "^18.3.18",
@@ -24,10 +26,11 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "howler": "^2.2.4",
+    "node-wav": "^0.0.2",
     "postcss": "^8.5.3",
+    "sharp": "^0.35.5",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2",
-    "use-sound": "^4.0.3",
     "vite": "^6.2.0",
     "vitest": "^3.0.7"
   }

@@ -36,9 +36,10 @@ const BattleMessage = () => {
       ? Math.max(0, Math.min(100, (updateAttackerHealth / attackerMaxHealth) * 100))
       : 0;
 
+  const maxMagic = playingUnit?.maxMagic ?? 0;
   const magicPercentage =
-    playingUnit?.maxMagic > 0
-      ? Math.max(0, Math.min(100, (updateMagic / playingUnit.maxMagic) * 100))
+    maxMagic > 0
+      ? Math.max(0, Math.min(100, (updateMagic / maxMagic) * 100))
       : 0;
 
   const isRangedAttacker = Boolean(playingUnit?.isRanged);
@@ -148,7 +149,11 @@ const BattleMessage = () => {
         <div className="md:col-span-3 flex flex-col items-center justify-center text-center py-2">
           {/* Jeweled Action Emblem */}
           <div className="relative p-2.5 border-2 border-amber-300 rounded-full bg-gradient-to-b from-zinc-800 via-zinc-950 to-black shadow-jewel-gold mb-2 animate-bounce duration-1000">
-            <SkillIcon skill={actionImage} className="w-11 h-11" />
+            {actionImage ? (
+              <SkillIcon skill={actionImage} className="w-11 h-11" />
+            ) : (
+              <span className="w-11 h-11 flex items-center justify-center text-xl text-amber-300">⚔</span>
+            )}
           </div>
 
           <span className="font-cinzel text-xs font-black text-amber-200 tracking-widest uppercase drop-shadow">

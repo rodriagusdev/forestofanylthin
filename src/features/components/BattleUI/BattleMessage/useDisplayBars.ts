@@ -8,7 +8,7 @@ import {
   calculateRetaliationStrike,
 } from '../../../../helpers/combat/damageCalculations';
 
-const getUnitMaxHealth = (u?: Unit) => {
+const getUnitMaxHealth = (u?: Unit | null) => {
   if (!u) return 1;
   if (u.type === 'Hero') return u.maxHealth || u.health || 1;
   return u.maxHealth || (u.health * (u.maxStack || u.stack || 1)) || 1;
@@ -61,7 +61,7 @@ export const useDisplayBars = () => {
       attackerDamage = calculateRainOfFirePower(playingUnit);
       casualtiesLost = Math.floor(attackerDamage / targetUnit.health);
     } else if (actionImage.name === 'Destruction: Ice Spear') {
-      attackerDamage = calculateIceSpearDamage(targetUnit);
+      attackerDamage = calculateIceSpearDamage(targetUnit, playingUnit);
       casualtiesLost = Math.floor(attackerDamage / targetUnit.health);
     }
   }
@@ -91,64 +91,30 @@ export const useDisplayBars = () => {
   const endMagic = Math.max(0, (playingUnit?.magic || 0) - magicUsedInTurn);
 
   useEffect(() => {
+    // Set initial values
     setUpdateHealth(targetHealth);
     setUpdateAttackerHealth(attackerHealth);
     setUpdateMagic(playingUnit?.magic || 0);
 
-    if (isReanimate) {
-      const healthDelta = targetMaxHealth - targetHealth;
-      barInterval.current = setInterval(() => {
-        setUpdateHealth((curr) => {
-          const next = curr + healthDelta / totalTicks;
-          return next >= targetMaxHealth ? targetMaxHealth : next;
-        });
+    // Trigger smooth transition on next tick
+    const timeoutId = setTimeout(() => {
+      if (isReanimate) {
+        setUpdateHealth(targetMaxHealth);
+      } else if (isDamaging && !isCursed && attackerDamage > 0) {
+        setUpdateHealth(targetEndHealth);
+      }
 
-        if (isMagicUsed) {
-          setUpdateMagic((curr) => {
-            const next = curr - magicUsedInTurn / totalTicks;
-            return next <= endMagic ? endMagic : next;
-          });
-        }
-      }, msUpdate);
-    } else if (isDamaging) {
-      barInterval.current = setInterval(() => {
-        if (!isCursed && attackerDamage > 0) {
-          setUpdateHealth((curr) => {
-            const next = curr - attackerDamage / totalTicks;
-            return next <= targetEndHealth ? targetEndHealth : next;
-          });
-        }
+      if (isDamaging && (vampiricHealAmount > 0 || (canRetaliate && retaliationDamage > 0))) {
+        setUpdateAttackerHealth(attackerEndHealth);
+      }
 
-        if (vampiricHealAmount > 0 || (canRetaliate && retaliationDamage > 0)) {
-          const netHealthDelta = attackerEndHealth - attackerHealth;
-          setUpdateAttackerHealth((curr) => {
-            const next = curr + netHealthDelta / totalTicks;
-            if (netHealthDelta >= 0) {
-              return next >= attackerEndHealth ? attackerEndHealth : next;
-            } else {
-              return next <= attackerEndHealth ? attackerEndHealth : next;
-            }
-          });
-        }
-
-        if (isMagicUsed) {
-          setUpdateMagic((curr) => {
-            const next = curr - magicUsedInTurn / totalTicks;
-            return next <= endMagic ? endMagic : next;
-          });
-        }
-      }, msUpdate);
-    } else if (isMagicUsed) {
-      barInterval.current = setInterval(() => {
-        setUpdateMagic((curr) => {
-          const next = curr - magicUsedInTurn / totalTicks;
-          return next <= endMagic ? endMagic : next;
-        });
-      }, msUpdate);
-    }
+      if (isMagicUsed) {
+        setUpdateMagic(endMagic);
+      }
+    }, 60);
 
     return () => {
-      if (barInterval.current) clearInterval(barInterval.current);
+      clearTimeout(timeoutId);
     };
   }, [
     playingUnit,

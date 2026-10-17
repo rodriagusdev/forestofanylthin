@@ -23,7 +23,7 @@ const DialogueBox = ({ handleVisibility, image, race }: Props) => {
       {/* Header Badge */}
       <div className="flex items-center justify-center">
         <span className="px-3.5 py-0.5 rounded-sm bg-emerald-950/90 border border-emerald-500 text-emerald-200 text-[10px] font-cinzel font-black tracking-[0.2em] uppercase shadow-[0_0_15px_rgba(16,185,129,0.7)]">
-          ✦ EXPEDITION CHRONICLER ✦
+          WAR CHRONICLER
         </span>
       </div>
 
@@ -61,7 +61,7 @@ const DialogueBox = ({ handleVisibility, image, race }: Props) => {
           onClick={handleVisibility}
           className="w-full sm:w-auto px-8 py-2 rounded-sm bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 border border-emerald-500 text-emerald-200 hover:text-white hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.8)] font-cinzel font-black text-xs tracking-widest uppercase transition-all shadow-lg"
         >
-          ✕ Conclude Council
+          DISMISS
         </button>
       </div>
     </div>

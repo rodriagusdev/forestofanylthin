@@ -1,12 +1,13 @@
 import { Army } from '../../types';
-import { useChangeVisibility } from '../../hooks';
+import { useChangeVisibility, useActionSound } from '../../hooks';
 import { useUnitPreview } from '../../features/UnitPreview';
 import { useContext } from 'react';
 import { BattleContext } from '../../context/BattleContext';
+import { useCampaignStore } from '../../store/useCampaignStore';
 import { DarkBackgroundWrapper } from '../DarkBackgroundWrapper';
 import { UnitPreview } from './UnitPreview';
 import { DialogueBox } from './DialogueBox';
-import ydris from '../../assets/images/portraits/dryexa/ydris.jpg';
+import ydris from '../../assets/images/portraits/dryexa/ydris.webp';
 import dryexarangerFace from '../../assets/images/portraits/dryexa/dryexarangerface.jpg';
 import skeletonFace from '../../assets/images/portraits/undead/skeletonface.jpg';
 
@@ -19,6 +20,8 @@ const PlayerUI = ({ playerArmy, race }: Props) => {
   const { isVisible, handleVisibility } = useChangeVisibility();
   const { handleUnitPreview, handleExitUnitPreview, previewUnit } =
     useUnitPreview();
+  const { playPreviewSound } = useActionSound();
+  const openInventory = useCampaignStore((state) => state.openInventory);
 
   const {
     addedDryexaRanger,
@@ -26,6 +29,11 @@ const PlayerUI = ({ playerArmy, race }: Props) => {
     addedSkeletons,
     setAddedSkeletons,
   } = useContext(BattleContext);
+
+  const handleOpenArmory = () => {
+    playPreviewSound();
+    openInventory();
+  };
 
   return (
     <div className="flex flex-col gap-4 sm:gap-0 sm:flex-row items-center justify-between px-3 sm:px-6 py-4 bg-gradient-to-r from-black via-zinc-950/90 to-black border-b border-emerald-900/60 shadow-xl select-none">
@@ -39,27 +47,38 @@ const PlayerUI = ({ playerArmy, race }: Props) => {
         </DarkBackgroundWrapper>
       )}
 
-      {/* Ydris Chronicler Avatar with Ornate Green Frame */}
-      <div
-        className="relative group cursor-pointer flex items-center gap-3"
-        onClick={handleVisibility}
-      >
-        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-emerald-500 p-0.5 bg-black shadow-[0_0_20px_rgba(16,185,129,0.6)] group-hover:border-emerald-400 group-hover:shadow-[0_0_25px_rgba(16,185,129,0.9)] transition-all">
-          <img
-            className="w-full h-full object-cover object-top rounded-full filter brightness-105"
-            src={ydris}
-            alt="Ydris Chronicler"
-          />
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.2 rounded-sm bg-emerald-950 text-emerald-200 border border-emerald-500 text-[8px] font-cinzel font-black tracking-widest uppercase shadow">
-            TALK
-          </span>
+      {/* Left Dock: Ydris Chronicler & Armory Button */}
+      <div className="flex items-center gap-4">
+        {/* Ydris Chronicler Avatar */}
+        <div
+          className="relative group cursor-pointer flex items-center gap-3"
+          onClick={handleVisibility}
+        >
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-emerald-500 p-0.5 bg-black shadow-[0_0_20px_rgba(16,185,129,0.6)] group-hover:border-emerald-400 group-hover:shadow-[0_0_25px_rgba(16,185,129,0.9)] transition-all">
+            <img
+              className="w-full h-full object-cover object-top rounded-full filter brightness-105"
+              src={ydris}
+              alt="Ydris Chronicler"
+            />
+          </div>
+          <div className="hidden md:block">
+            <h4 className="font-cinzel text-xs font-black text-emerald-300 tracking-wider">
+              YDRIS
+            </h4>
+            <p className="text-[10px] font-mono text-zinc-400">War Chronicler</p>
+          </div>
         </div>
-        <div className="hidden md:block">
-          <h4 className="font-cinzel text-xs font-black text-emerald-300 tracking-wider">
-            YDRIS
-          </h4>
-          <p className="text-[10px] font-mono text-zinc-400">War Chronicler</p>
-        </div>
+
+        {/* Armory & Relics Button */}
+        <button
+          type="button"
+          onClick={handleOpenArmory}
+          className="px-3 py-1.5 rounded-xs font-cinzel text-xs font-black tracking-wider uppercase text-amber-200 bg-stone-950/90 hover:bg-amber-950/80 border border-amber-600/70 hover:border-amber-400 transition-all cursor-pointer shadow-[0_0_15px_rgba(217,119,6,0.3)] flex items-center gap-1.5 active:scale-95"
+          title="Open Hero Armory and Equipment"
+        >
+          <span className="text-amber-400 text-xs">❖</span>
+          <span>ARMORY</span>
+        </button>
       </div>
 
       {/* Player Army Battalion Units Dock with Green Framing */}
@@ -117,7 +136,7 @@ const PlayerUI = ({ playerArmy, race }: Props) => {
             <span className="absolute -bottom-1 -right-1 text-xs font-serif text-emerald-400">✦</span>
 
             <span className="px-3 py-0.5 rounded-sm bg-emerald-950 border border-emerald-500 text-emerald-200 text-[9px] font-cinzel font-black tracking-widest uppercase">
-              ✦ REINFORCEMENTS GAINED ✦
+              REINFORCEMENTS GAINED
             </span>
 
             <div className="w-24 h-24 rounded-full border-2 border-emerald-400 p-1 bg-black shadow-[0_0_20px_rgba(16,185,129,0.7)] my-1">
@@ -159,7 +178,7 @@ const PlayerUI = ({ playerArmy, race }: Props) => {
             <span className="absolute -bottom-1 -right-1 text-xs font-serif text-emerald-400">✦</span>
 
             <span className="px-3 py-0.5 rounded-sm bg-emerald-950 border border-emerald-500 text-emerald-200 text-[9px] font-cinzel font-black tracking-widest uppercase">
-              ✦ REANIMATION COMPLETE ✦
+              REANIMATION COMPLETE
             </span>
 
             <div className="w-24 h-24 rounded-full border-2 border-emerald-400 p-1 bg-black shadow-[0_0_20px_rgba(16,185,129,0.7)] my-1">

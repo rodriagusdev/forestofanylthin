@@ -1,20 +1,21 @@
-import { useContext, useState } from 'react';
-import { BattleContext } from '../../../context/BattleContext';
-import { ZONES, ZoneId } from '../../../data/zones/zones';
-import { DarkBackgroundWrapper } from '../../DarkBackgroundWrapper';
-import { BattleBoard } from '../BattleBoard';
-import { PlayerStack } from '../PlayerStack';
-import { EnemyStack } from '../EnemyStack';
-import { BattleMessage } from '../BattleMessage';
-import { DeadUnit } from '../DeadUnit';
-import { CombatLog } from '../CombatLog';
-import { UnitPreview } from '../../PlayerUI/UnitPreview';
+import { useContext } from 'react';
+import { BattleContext } from '../../context/BattleContext';
+import { findLocation } from '../../data/levels/levelsData';
+import { ZONES, ZoneId } from '../../data/zones/zones';
+import { DarkBackgroundWrapper } from '../DarkBackgroundWrapper';
+import { BattleBoard } from './BattleBoard';
+import { PlayerStack } from './PlayerStack';
+import { EnemyStack } from './EnemyStack';
+import { BattleMessage } from './BattleMessage';
+import { DeadUnit } from './DeadUnit';
+import { CombatLog } from './CombatLog';
+import { UnitPreview } from '../PlayerUI/UnitPreview';
 import {
   useGetPlayingUnit,
   useHandleUnitsInBoard,
-} from '../../../features/components/BattleUI';
+} from '../../features/components/BattleUI';
 
-const BattleUI = () => {
+export const BattleUI = () => {
   const {
     isInFight,
     showBattleMessage,
@@ -30,7 +31,9 @@ const BattleUI = () => {
   useHandleUnitsInBoard();
 
   const zoneBg =
-    currentZoneImage || ZONES[(currentZone as ZoneId) || 'Cemetery']?.image;
+    currentZoneImage ||
+    findLocation(currentZone)?.location.image ||
+    ZONES[(currentZone as ZoneId) || 'Cemetery']?.image;
 
   return (
     <div className="relative min-h-screen lg:h-screen lg:max-h-screen w-full flex flex-col lg:flex-row gap-3 py-2 px-2 sm:px-4 select-none font-outfit text-zinc-100 bg-black overflow-x-hidden overflow-y-auto lg:overflow-hidden">
@@ -48,15 +51,14 @@ const BattleUI = () => {
 
       {/* Right Column: 3/4 Width Crystalline Amethyst Frame Battlefield */}
       <div
-        className={`w-full lg:w-[74%] xl:w-[77%] h-full flex flex-col justify-between painting-frame smoked-velvet-canvas p-1.5 sm:p-2.5 rounded-lg relative z-10 overflow-hidden ${
-          activeScreenShake === 'apocalyptic'
+        className={`w-full lg:w-[74%] xl:w-[77%] h-full flex flex-col justify-between painting-frame smoked-velvet-canvas p-1.5 sm:p-2.5 rounded-lg relative z-10 overflow-hidden ${activeScreenShake === 'apocalyptic'
             ? 'animate-combat-screen-shake-apocalyptic'
             : activeScreenShake === 'heavy'
-            ? 'animate-combat-screen-shake-heavy'
-            : activeScreenShake
-            ? 'animate-combat-screen-shake'
-            : ''
-        }`}
+              ? 'animate-combat-screen-shake-heavy'
+              : activeScreenShake
+                ? 'animate-combat-screen-shake'
+                : ''
+          }`}
       >
         {/* Dynamic Combat Impact Flash & Meteor FX Overlay */}
         {activeScreenFlash && (
@@ -81,7 +83,7 @@ const BattleUI = () => {
             ) : activeScreenFlash === 'arcane' || activeScreenFlash === 'ice' ? (
               <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/50 via-blue-500/30 to-fuchsia-600/40 shadow-[inset_0_0_80px_rgba(6,182,212,0.8)] animate-screen-flash" />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/45 via-teal-500/30 to-emerald-600/45 shadow-[inset_0_0_80px_rgba(16,185,129,0.8)] animate-screen-flash" />
+              <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/45 via-teal-500/30 to-emerald-600/45 shadow-[inset_0_0_80px_rgba(160,185,129,0.8)] animate-screen-flash" />
             )}
           </div>
         )}
@@ -152,7 +154,7 @@ const BattleUI = () => {
       )}
 
       {/* Full Unit Codex Description Modal (Triggered by BattleBoard or Battlefield Cards) */}
-      {previewUnit !== undefined && (
+      {previewUnit !== null && previewUnit !== undefined && (
         <DarkBackgroundWrapper onClose={handleExitUnitPreview}>
           <UnitPreview
             previewUnit={previewUnit}
@@ -165,4 +167,3 @@ const BattleUI = () => {
 };
 
 export default BattleUI;
-
